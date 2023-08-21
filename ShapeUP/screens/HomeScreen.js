@@ -1,15 +1,22 @@
 // screens/HomeScreen.js
 
 import React from 'react';
-import { View, Text, Button } from 'react-native';
+import { View, Text, StyleSheet } from 'react-native';
+import Button from '../components/Button';
 
-const HomeScreen = ({ navigation }) => {
-  return (
-    <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
-      <Text>Welcome to the Health & Fitness App!</Text>
-      <Button title="Go to Profile" onPress={() => navigation.navigate('Profile')} />
-    </View>
-  );
-}
+const HomeScreen = ({ navigation }) => (
+  <View style={styles.container}>
+    <Text>Home Screen</Text>
+    <Button title="Create New Plan" onPress={() => navigation.navigate('CreatePlan')} />
+  </View>
+);
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+});
 
 export default HomeScreen;

@@ -1,1 +1,18 @@
-{"name":"ShapeUP","version":"0.0.1","private":true,"scripts":{"start":"node node_modules/react-native/local-cli/cli.js start"},"dependencies":{"@react-navigation/native":"^6.1.7","@react-navigation/stack":"^6.3.17","react-native":"0.72.4","react-redux":"^8.1.2","redux":"^4.2.1"}}
+{
+  "name": "ShapeUP",
+  "version": "0.0.1",
+  "private": true,
+  "scripts": {
+    "start": "node node_modules/react-native/local-cli/cli.js start"
+  },
+  "dependencies": {
+    "@react-navigation/native": "^6.1.7",
+    "@react-navigation/stack": "^6.3.17",
+    "expo": "^49.0.7",
+    "react-dom": "^18.2.0",
+    "react-native": "0.72.4",
+    "react-native-web": "~0.19.6",
+    "react-redux": "^8.1.2",
+    "redux": "^4.2.1"
+  }
+}
