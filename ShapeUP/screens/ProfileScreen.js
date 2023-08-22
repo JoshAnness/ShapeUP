@@ -1,8 +1,5 @@
-// screens/ProfileScreen.js
-
 import React from 'react';
-import { View, Text, StyleSheet, FlatList } from 'react-native';
-import Button from '../components/Button';
+import { View, Text, StyleSheet, FlatList, TouchableOpacity } from 'react-native';
 
 const DATA = [
     {
@@ -15,34 +12,35 @@ const DATA = [
         title: 'Build Muscle',
         progress: 30
     },
-    // Add more mock data for testing
+    // More data...
 ];
 
 const Item = ({ title, progress, onPress }) => (
-    <View style={styles.item}>
-        <Text>{title}</Text>
+    <TouchableOpacity style={styles.item} onPress={onPress}>
+        <Text style={styles.itemTitle}>{title}</Text>
         <View style={styles.progressBarContainer}>
             <View style={{ ...styles.progressBar, width: `${progress}%` }} />
         </View>
-        <Button title="Details" onPress={onPress} />
-    </View>
+    </TouchableOpacity>
 );
 
 const ProfileScreen = ({ navigation }) => {
     return (
         <View style={styles.container}>
-            <Text style={styles.header}>Hello, John Doe</Text>  {/* Mock name for now */}
-            <FlatList
-                data={DATA}
-                renderItem={({ item }) => (
-                    <Item 
-                        title={item.title} 
-                        progress={item.progress} 
-                        onPress={() => navigation.navigate('GoalDetails', { goalId: item.id })}
-                    />
-                )}
-                keyExtractor={item => item.id}
-            />
+            <View style={styles.contentContainer}>
+                <Text style={styles.header}>Hello, John Doe</Text>
+                <FlatList
+                    data={DATA}
+                    renderItem={({ item }) => (
+                        <Item 
+                            title={item.title} 
+                            progress={item.progress} 
+                            onPress={() => navigation.navigate('GoalDetails', { goalId: item.id })}
+                        />
+                    )}
+                    keyExtractor={item => item.id}
+                />
+            </View>
         </View>
     );
 }
@@ -50,32 +48,48 @@ const ProfileScreen = ({ navigation }) => {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        padding: 16
+        padding: 20,
+        backgroundColor: '#f4f4f8',
+        justifyContent: 'center',
+        alignItems: 'center'
+    },
+    contentContainer: {
+        width: '100%',
+        alignItems: 'center'
     },
     header: {
-        marginBottom: 20,
-        fontSize: 18,
-        fontWeight: 'bold'
+        marginBottom: 40,  // Increased margin
+        fontSize: 30,  // Bigger font
+        fontWeight: 'bold',
+        color: '#333',
+        textAlign: 'center'
     },
     item: {
-        padding: 16,
-        marginVertical: 8,
+        width: '95%',  // Taking a bit more width
+        padding: 25,  // Increased padding
+        marginVertical: 12,  // More vertical spacing
         borderColor: '#ccc',
-        borderWidth: 1,
-        borderRadius: 5,
-        alignItems: 'center',
+        borderWidth: 1.5,  // Slightly thicker border
+        borderRadius: 12,  // Slightly larger border radius
+        backgroundColor: '#ffffff',
+        alignItems: 'center'
+    },
+    itemTitle: {
+        fontSize: 22,  // Larger font
+        fontWeight: '500',
+        marginBottom: 15,  // A bit more space before the progress bar
+        textAlign: 'center'
     },
     progressBarContainer: {
-        height: 20,
-        width: '100%',
+        height: 30,  // Taller progress bar
+        width: '90%',
         backgroundColor: '#e0e0e0',
-        borderRadius: 5,
-        marginVertical: 10
+        borderRadius: 12  // Matches the item's border radius
     },
     progressBar: {
         height: '100%',
         backgroundColor: '#4CAF50',
-        borderRadius: 5
+        borderRadius: 12
     }
 });
 
