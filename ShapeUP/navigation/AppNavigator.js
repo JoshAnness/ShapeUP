@@ -5,6 +5,7 @@ import ProfileScreen from '../screens/ProfileScreen';
 import CreateGoalScreen from '../screens/CreateGoalScreen';
 import GoalDetailsScreen from '../screens/GoalDetailsScreen';
 import BaselineTestScreen from '../screens/BaselineTestScreen';
+import LoginScreen from '../screens/LoginScreen';
 
 const Stack = createStackNavigator();
 
@@ -16,7 +17,7 @@ const HeaderButton = ({ title, onPress }) => (
 
 const AppNavigator = () => (
   <Stack.Navigator 
-    initialRouteName="Profile"
+    initialRouteName="Login"
     screenOptions={{
         headerStyle: {
             backgroundColor: '#f4f4f8',
@@ -30,6 +31,12 @@ const AppNavigator = () => (
     }}
   >
     <Stack.Screen 
+      name="Login" 
+      component={LoginScreen} 
+      options={{ headerShown: false }}
+    />
+
+    <Stack.Screen 
       name="Profile" 
       component={ProfileScreen} 
       options={({ navigation }) => ({
@@ -42,8 +49,11 @@ const AppNavigator = () => (
         ),
       })}
     />
+
     <Stack.Screen name="CreateGoal" component={CreateGoalScreen} options={{ title: 'Create New Goal' }} />
+
     <Stack.Screen name="GoalDetails" component={GoalDetailsScreen} options={{ title: 'Goal Details' }} />
+
     <Stack.Screen name="BaselineTest" component={BaselineTestScreen} options={{ title: 'Baseline Test' }} />
   </Stack.Navigator>
 );
