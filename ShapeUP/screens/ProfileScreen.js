@@ -15,6 +15,17 @@ const DATA = [
     // More data...
 ];
 
+const handleLogout = () => {
+    signOut(auth)
+        .then(() => {
+            console.log('Logged out');
+            navigation.navigate('Login'); // Assuming you have a route named 'Login'
+        })
+        .catch((error) => {
+            console.error('Error logging out:', error);
+        });
+}
+
 const Item = ({ title, progress, onPress }) => (
     <TouchableOpacity style={styles.item} onPress={onPress}>
         <Text style={styles.itemTitle}>{title}</Text>
