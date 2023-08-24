@@ -6,6 +6,8 @@ import CreateGoalScreen from '../screens/CreateGoalScreen';
 import GoalDetailsScreen from '../screens/GoalDetailsScreen';
 import BaselineTestScreen from '../screens/BaselineTestScreen';
 import LoginScreen from '../screens/LoginScreen';
+import { signOut } from 'firebase/auth';
+import { auth } from '../firebase';
 
 const Stack = createStackNavigator();
 
@@ -45,6 +47,16 @@ const AppNavigator = () => (
           <View style={{ flexDirection: 'row', marginRight: 10 }}>
             <HeaderButton title="Create Goal" onPress={() => navigation.navigate('CreateGoal')} />
             <HeaderButton title="Baseline Test" onPress={() => navigation.navigate('BaselineTest')} />
+            <HeaderButton title="Logout" onPress={() => {
+              signOut(auth)
+                  .then(() => {
+                      console.log('Logged out');
+                      navigation.replace('Login');
+                  })
+                  .catch((error) => {
+                      console.error('Error logging out:', error);
+                  });
+            }} />
           </View>
         ),
       })}

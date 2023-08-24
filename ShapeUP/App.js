@@ -3,8 +3,6 @@
 import React from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import AppNavigator from './navigation/AppNavigator';
-import LoginScreen from './screens/LoginScreen';
-import ProfileScreen from './screens/ProfileScreen';
 import { StyleSheet, Text, View } from 'react-native';
 
 export default function App() {
