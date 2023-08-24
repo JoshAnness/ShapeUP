@@ -1,5 +1,9 @@
-import React from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, Image } from 'react-native';
+import { signOut } from "firebase/auth";
+import { auth } from '../firebase';
+import { getDoc, doc } from 'firebase/firestore';
+import { db } from '../firebase';
 
 const DATA = [
     {
@@ -25,21 +29,78 @@ const Item = ({ title, progress, onPress }) => (
 );
 
 const ProfileScreen = ({ navigation }) => {
+
+    const [userName, setUserName] = useState("");
+    const [userProfilePic, setUserProfilePic] = useState(null);
+
+    useEffect(() => {
+        if (auth.currentUser) {
+            const userRef = doc(db, 'users', auth.currentUser.uid);
+            getDoc(userRef)
+                .then(docSnapshot => {
+                    if (docSnapshot.exists()) {
+                        setUserName(docSnapshot.data().name);
+                    }
+                })
+                .catch(error => {
+                    console.error("Error fetching user data:", error);
+                });
+        }
+    }, []);
+
+    const selectProfilePicture = () => {
+        // Placeholder function
+        const sampleImageUrl = 'https://via.placeholder.com/150';
+        setUserProfilePic(sampleImageUrl);
+    };
+
+    const handleLogout = () => {
+        signOut(auth)
+            .then(() => {
+                console.log('Logged out');
+                navigation.replace('Login');
+            })
+            .catch((error) => {
+                console.error('Error logging out:', error);
+            });
+    }
+
     return (
         <View style={styles.container}>
-            <View style={styles.contentContainer}>
-                <Text style={styles.header}>Hello, John Doe</Text>
-                <FlatList
-                    data={DATA}
-                    renderItem={({ item }) => (
-                        <Item 
-                            title={item.title} 
-                            progress={item.progress} 
-                            onPress={() => navigation.navigate('GoalDetails', { goalId: item.id })}
-                        />
-                    )}
-                    keyExtractor={item => item.id}
-                />
+            <View style={styles.headerContainer}>
+                <TouchableOpacity onPress={selectProfilePicture}>
+                    <Image 
+                        source={userProfilePic ? { uri: userProfilePic } : require('../assets/profile.png')} 
+                        style={styles.profileImage} 
+                    />
+                </TouchableOpacity>
+                <Text style={styles.header}>{userName ? userName : "User"}</Text>
+            </View>
+            
+            <FlatList
+                data={DATA}
+                renderItem={({ item }) => (
+                    <Item 
+                        title={item.title} 
+                        progress={item.progress} 
+                        onPress={() => navigation.navigate('GoalDetails', { goalId: item.id })}
+                    />
+                )}
+                keyExtractor={item => item.id}
+            />
+            
+            <View style={styles.footerContainer}>
+                <TouchableOpacity style={styles.smallButton} onPress={() => navigation.navigate('BaselineTest')}>
+                    <Text>Baseline Test</Text>
+                </TouchableOpacity>
+                
+                <TouchableOpacity style={styles.bigButton} onPress={() => navigation.navigate('CreateGoal')}>
+                    <Text>Create Goal</Text>
+                </TouchableOpacity>
+                
+                <TouchableOpacity style={styles.smallButton} onPress={handleLogout}>
+                    <Text>Logout</Text>
+                </TouchableOpacity>
             </View>
         </View>
     );
@@ -48,9 +109,8 @@ const ProfileScreen = ({ navigation }) => {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        padding: 20,
+        padding: '5%',
         backgroundColor: '#f4f4f8',
-        justifyContent: 'center',
         alignItems: 'center'
     },
     contentContainer: {
@@ -58,38 +118,79 @@ const styles = StyleSheet.create({
         alignItems: 'center'
     },
     header: {
-        marginBottom: 40,  // Increased margin
-        fontSize: 30,  // Bigger font
+        marginBottom: 20,
+        fontSize: 24,
         fontWeight: 'bold',
         color: '#333',
         textAlign: 'center'
     },
     item: {
-        width: '95%',  // Taking a bit more width
-        padding: 25,  // Increased padding
-        marginVertical: 12,  // More vertical spacing
+        width: '95%',
+        padding: 15,
+        marginVertical: 10,
         borderColor: '#ccc',
-        borderWidth: 1.5,  // Slightly thicker border
-        borderRadius: 12,  // Slightly larger border radius
+        borderWidth: 1.5,
+        borderRadius: 10,
         backgroundColor: '#ffffff',
         alignItems: 'center'
     },
     itemTitle: {
-        fontSize: 22,  // Larger font
+        fontSize: 20,
         fontWeight: '500',
-        marginBottom: 15,  // A bit more space before the progress bar
+        marginBottom: 10,
         textAlign: 'center'
     },
     progressBarContainer: {
-        height: 30,  // Taller progress bar
+        height: 25,
         width: '90%',
         backgroundColor: '#e0e0e0',
-        borderRadius: 12  // Matches the item's border radius
+        borderRadius: 10
     },
     progressBar: {
         height: '100%',
         backgroundColor: '#4CAF50',
-        borderRadius: 12
+        borderRadius: 10
+    },
+    profileImage: {
+        width: 150,
+        height: 150,
+        borderRadius: 40,
+        marginBottom: '10%'
+    },
+    headerContainer: {
+        flexDirection: 'column',  // <-- Change this from 'row' to 'column'
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginTop: '15%',
+        marginBottom: 15,
+        width: '100%'
+    },    
+    footerContainer: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        position: 'absolute',
+        bottom: '5%',
+        left: '5%',
+        right: '5%'
+    },
+    smallButton: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        height: 40,
+        margin: 5,
+        backgroundColor: '#e0e0e0',
+        borderRadius: 8
+    },
+    bigButton: {
+        flex: 2,
+        justifyContent: 'center',
+        alignItems: 'center',
+        height: 40,
+        margin: 5,
+        backgroundColor: '#4CAF50',
+        borderRadius: 8
     }
 });
 

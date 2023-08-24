@@ -5,6 +5,10 @@ import ProfileScreen from '../screens/ProfileScreen';
 import CreateGoalScreen from '../screens/CreateGoalScreen';
 import GoalDetailsScreen from '../screens/GoalDetailsScreen';
 import BaselineTestScreen from '../screens/BaselineTestScreen';
+import LoginScreen from '../screens/LoginScreen';
+import RegisterScreen from '../screens/RegisterScreen';
+import { signOut } from 'firebase/auth';
+import { auth } from '../firebase';
 
 const Stack = createStackNavigator();
 
@@ -16,7 +20,7 @@ const HeaderButton = ({ title, onPress }) => (
 
 const AppNavigator = () => (
   <Stack.Navigator 
-    initialRouteName="Profile"
+    initialRouteName="Login"
     screenOptions={{
         headerStyle: {
             backgroundColor: '#f4f4f8',
@@ -30,18 +34,25 @@ const AppNavigator = () => (
     }}
   >
     <Stack.Screen 
+      name="Login" 
+      component={LoginScreen} 
+      options={{ headerShown: false }}
+    />
+
+    <Stack.Screen 
       name="Profile" 
       component={ProfileScreen} 
       options={({ navigation }) => ({
-        title: 'Profile',
-        headerRight: () => (
-          <View style={{ flexDirection: 'row', marginRight: 10 }}>
-            <HeaderButton title="Create Goal" onPress={() => navigation.navigate('CreateGoal')} />
-            <HeaderButton title="Baseline Test" onPress={() => navigation.navigate('BaselineTest')} />
-          </View>
-        ),
+        headerShown: false
       })}
     />
+
+    <Stack.Screen 
+      name="Register" 
+      component={RegisterScreen} 
+      options={{ headerShown: false }}
+    />
+
     <Stack.Screen name="CreateGoal" component={CreateGoalScreen} options={{ title: 'Create New Goal' }} />
     <Stack.Screen name="GoalDetails" component={GoalDetailsScreen} options={{ title: 'Goal Details' }} />
     <Stack.Screen name="BaselineTest" component={BaselineTestScreen} options={{ title: 'Baseline Test' }} />
