@@ -1,5 +1,3 @@
-// RegisterScreen.js
-
 import React, { useState } from 'react';
 import { View, TextInput, TouchableOpacity, Text, StyleSheet } from 'react-native';
 import { auth, db } from '../firebase'; 
@@ -8,7 +6,8 @@ import { useNavigation } from '@react-navigation/core';
 import { setDoc, doc } from 'firebase/firestore';
 
 const RegisterScreen = () => {
-    const [name, setName] = useState('');
+    const [firstName, setFirstName] = useState(''); // Added firstName state
+    const [lastName, setLastName] = useState(''); // Added lastName state
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
 
@@ -20,10 +19,12 @@ const RegisterScreen = () => {
                 const user = userCredentials.user;
                 console.log('Registered with:', user.email);
 
-                // Store the user's name in Firestore
+                // Store the user's details in Firestore
                 setDoc(doc(db, 'users', user.uid), {
-                    name: name,
-                    email: email
+                    firstName: firstName,
+                    lastName: lastName,
+                    email: email,
+                    userImg: null
                 });
 
                 // Optionally, navigate the user to the Profile screen after registering
@@ -36,9 +37,15 @@ const RegisterScreen = () => {
         <View style={styles.container}>
             <View style={styles.inputContainer}>
                 <TextInput 
-                    placeholder="Name"
-                    value={name}
-                    onChangeText={text => setName(text)}
+                    placeholder="First Name"
+                    value={firstName}
+                    onChangeText={text => setFirstName(text)}
+                    style={styles.input}
+                />
+                <TextInput 
+                    placeholder="Last Name"
+                    value={lastName}
+                    onChangeText={text => setLastName(text)}
                     style={styles.input}
                 />
                 <TextInput 
@@ -68,12 +75,11 @@ const RegisterScreen = () => {
     );
 };
 
-export default RegisterScreen;
-
 const styles = StyleSheet.create({
     container: {
         flex: 1,
         justifyContent: 'center',
+        paddingBottom: '25%',
         alignItems: 'center',
     },
     inputContainer: {
@@ -90,7 +96,7 @@ const styles = StyleSheet.create({
         width: '60%',
         justifyContent: 'center',
         alignItems: 'center',
-        marginTop: 40
+        marginTop: 30
     },
     button: {
         backgroundColor: '#0782F9',
@@ -116,3 +122,5 @@ const styles = StyleSheet.create({
         fontSize: 16
     }
 })
+
+export default RegisterScreen;
