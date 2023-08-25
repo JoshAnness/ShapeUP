@@ -1,14 +1,17 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, StyleSheet, Button, Alert } from 'react-native';
 import { Picker } from '@react-native-picker/picker';
+import { auth } from '../firebase';
+import { addDoc, collection, setDoc, doc } from 'firebase/firestore';
+import { db } from '../firebase';
 
 const BaselineTestScreen = ({ navigation }) => {
   const [age, setAge] = useState("");
   const [weight, setWeight] = useState("");
   const [height, setHeight] = useState("");
-  const [sex, setSex] = useState("");
+  const [sex, setSex] = useState("male");
 
-  const handleBaselineSubmit = () => {
+  const handleBaselineSubmit = async () => {
     // Validate the inputs
     if (age < 18 || age > 100) {
       Alert.alert("Invalid Age", "Please enter an age between 18 and 100.");
@@ -25,7 +28,20 @@ const BaselineTestScreen = ({ navigation }) => {
       return;
     }
 
-    navigation.goBack();
+    try {
+      const baselineTestRef = doc(db, 'baselineTests', auth.currentUser.uid);
+      await setDoc(baselineTestRef, {
+          age: parseInt(age),
+          weight: parseInt(weight),
+          height: parseInt(height),
+          sex: sex
+      });
+      
+      navigation.replace('Profile');
+    } catch (error) {
+        Alert.alert("Error", "There was an issue saving your data. Please try again.");
+        console.error("Error adding baseline test: ", error);
+    }
   };
 
   return (
@@ -68,11 +84,11 @@ const BaselineTestScreen = ({ navigation }) => {
         }}
       />
 
-      <View style={{ width: '95%', height: 50, borderColor: 'gray', borderWidth: 1, borderRadius: 8, marginBottom: 20 }}>
+      <View style={styles.pickerContainer}>
         <Picker
           selectedValue={sex}
           onValueChange={(itemValue) => setSex(itemValue)}
-          style={{ width: '100%', height: '100%' }}
+          style={styles.picker}
         >
           <Picker.Item label="Male" value="male" />
           <Picker.Item label="Female" value="female" />
@@ -87,7 +103,7 @@ const BaselineTestScreen = ({ navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    justifyContent: 'center',
+    justifyContent: 'top',
     padding: '5%',
     backgroundColor: '#f4f4f8',
     alignItems: 'center'
@@ -106,6 +122,15 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     marginBottom: 20,
     borderRadius: 8
+  },
+  pickerContainer: {
+    width: '95%',
+    height: 50,
+    marginBottom: 125
+  },
+  picker: {
+    width: '100%',
+    flex: 1,
   },
   submitButton: {
     marginTop: 10,
