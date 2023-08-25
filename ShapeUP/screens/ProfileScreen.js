@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, Image } from 'react-native';
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, Image, Alert } from 'react-native';
 import { signOut } from "firebase/auth";
 import { auth } from '../firebase';
-import { getDoc, doc } from 'firebase/firestore';
-import { db } from '../firebase';
+import { getDoc, doc, updateDoc } from 'firebase/firestore';
+import { db, storage } from '../firebase';
+import * as ImagePicker from 'expo-image-picker';
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 
 const DATA = [
     {
@@ -30,7 +32,8 @@ const Item = ({ title, progress, onPress }) => (
 
 const ProfileScreen = ({ navigation }) => {
 
-    const [userName, setUserName] = useState("");
+    const [firstName, setFirstName] = useState("");
+    const [lastName, setLastName] = useState("");
     const [userProfilePic, setUserProfilePic] = useState(null);
 
     useEffect(() => {
@@ -39,8 +42,13 @@ const ProfileScreen = ({ navigation }) => {
             getDoc(userRef)
                 .then(docSnapshot => {
                     if (docSnapshot.exists()) {
-                        setUserName(docSnapshot.data().name);
-                    }
+                        const data = docSnapshot.data();
+                        setFirstName(data.firstName);
+                        setLastName(data.lastName);
+                        if (data.userImg) { // Check if userImg is available in the document
+                            setUserProfilePic(data.userImg); // Set the image URL to the userProfilePic state
+                        }
+                    }                    
                 })
                 .catch(error => {
                     console.error("Error fetching user data:", error);
@@ -48,11 +56,65 @@ const ProfileScreen = ({ navigation }) => {
         }
     }, []);
 
-    const selectProfilePicture = () => {
-        // Placeholder function
-        const sampleImageUrl = 'https://via.placeholder.com/150';
-        setUserProfilePic(sampleImageUrl);
-    };
+    const uploadImage = async (uri) => {
+        try {
+            console.log('Converting URI to blob');
+            
+            const response = await fetch(uri);
+            const blob = await response.blob();
+            
+            let filename = uri.substring(uri.lastIndexOf('/') + 1);
+            const extension = filename.split('.').pop();
+            const name = filename.split('.').slice(0, -1).join('.');
+            filename = name + Date.now() + '.' + extension;
+        
+            const storageRef = ref(storage, `users/${auth.currentUser.uid}/${filename}`);
+            console.log('Starting upload to Firebase');
+        
+            const uploadTask = await uploadBytes(storageRef, blob);
+    
+            // Wait for the upload to complete
+            await uploadTask;
+        
+            console.log('Upload to Firebase complete');
+            
+            const downloadURL = await getDownloadURL(storageRef);
+            console.log('Download URL:', downloadURL);
+        
+            return downloadURL;
+        } catch (error) {
+            console.error("Error in uploadImage:", error);
+        }
+    };    
+
+    const selectProfilePicture = async () => {
+        let result = await ImagePicker.launchImageLibraryAsync({
+          mediaTypes: ImagePicker.MediaTypeOptions.All,
+          allowsEditing: true,
+          aspect: [4, 3],
+          quality: 1,
+        });
+        
+        if (!result.canceled) {
+            const uri = result.assets[0].uri;
+            setUserProfilePic(uri);  // Set the local URI to the state for UI display.
+    
+            // Start uploading the selected image to Firebase Storage.
+            const downloadURL = await uploadImage(uri);
+    
+            // Once the image is uploaded, update the user document in Firestore.
+            if (downloadURL) {
+                const userRef = doc(db, 'users', auth.currentUser.uid);
+                updateDoc(userRef, {
+                    userImg: downloadURL  // Set the Firestore userImg field to the download URL.
+                }).then(() => {
+                    console.log('User image URL updated in Firestore.');
+                }).catch(error => {
+                    console.error("Error updating user image URL in Firestore:", error);
+                });
+            }
+        }
+    };      
 
     const handleLogout = () => {
         signOut(auth)
@@ -74,7 +136,7 @@ const ProfileScreen = ({ navigation }) => {
                         style={styles.profileImage} 
                     />
                 </TouchableOpacity>
-                <Text style={styles.header}>{userName ? userName : "User"}</Text>
+                <Text style={styles.header}>{firstName && lastName ? `${firstName} ${lastName}` : "User"}</Text>
             </View>
             
             <FlatList

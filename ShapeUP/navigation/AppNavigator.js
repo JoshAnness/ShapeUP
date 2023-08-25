@@ -24,8 +24,8 @@ const AppNavigator = () => (
     screenOptions={{
         headerStyle: {
             backgroundColor: '#f4f4f8',
-            elevation: 0,  // remove shadow on Android
-            shadowOpacity: 0,  // remove shadow on iOS
+            elevation: 0,
+            shadowOpacity: 0,
         },
         headerTintColor: '#333',
         headerTitleStyle: {
@@ -40,6 +40,18 @@ const AppNavigator = () => (
     />
 
     <Stack.Screen 
+      name="Register" 
+      component={RegisterScreen} 
+      options={{ headerShown: false }}
+    />
+
+    <Stack.Screen 
+      name="BaselineTest" 
+      component={BaselineTestScreen} 
+      options={{ title: 'Baseline Test' }}
+    />
+
+    <Stack.Screen 
       name="Profile" 
       component={ProfileScreen} 
       options={({ navigation }) => ({
@@ -48,14 +60,16 @@ const AppNavigator = () => (
     />
 
     <Stack.Screen 
-      name="Register" 
-      component={RegisterScreen} 
-      options={{ headerShown: false }}
+      name="CreateGoal" 
+      component={CreateGoalScreen} 
+      options={{ title: 'Create New Goal' }}
     />
 
-    <Stack.Screen name="CreateGoal" component={CreateGoalScreen} options={{ title: 'Create New Goal' }} />
-    <Stack.Screen name="GoalDetails" component={GoalDetailsScreen} options={{ title: 'Goal Details' }} />
-    <Stack.Screen name="BaselineTest" component={BaselineTestScreen} options={{ title: 'Baseline Test' }} />
+    <Stack.Screen 
+      name="GoalDetails" 
+      component={GoalDetailsScreen} 
+      options={{ title: 'Goal Details' }}
+    />
   </Stack.Navigator>
 );
 
