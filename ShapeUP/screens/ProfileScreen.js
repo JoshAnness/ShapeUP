@@ -164,6 +164,13 @@ const ProfileScreen = ({ navigation }) => {
                     <Text>Logout</Text>
                 </TouchableOpacity>
             </View>
+
+            <TouchableOpacity style={styles.settingsButton} onPress={() => navigation.navigate('Settings')}>
+                <Image 
+                    source={require('../assets/settingsIcon.png')}
+                    style={styles.settingsIcon} 
+                />
+            </TouchableOpacity>
         </View>
     );
 }
@@ -253,7 +260,18 @@ const styles = StyleSheet.create({
         margin: 5,
         backgroundColor: '#4CAF50',
         borderRadius: 8
-    }
+    },
+    settingsButton: {
+        position: 'absolute', 
+        top: 50,
+        right: 25,
+        zIndex: 1  
+    },
+    settingsIcon: {
+        width: 35,  // Or the size you prefer
+        height: 35,
+        resizeMode: 'contain'
+    }  
 });
 
 export default ProfileScreen;
