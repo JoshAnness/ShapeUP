@@ -117,17 +117,6 @@ const ProfileScreen = ({ navigation }) => {
         }
     };      
 
-    const handleLogout = () => {
-        signOut(auth)
-            .then(() => {
-                console.log('Logged out');
-                navigation.replace('Login');
-            })
-            .catch((error) => {
-                console.error('Error logging out:', error);
-            });
-    }
-
     const handleToggle = (button) => {
         setSelectedButton(button);
     };
@@ -178,16 +167,16 @@ const ProfileScreen = ({ navigation }) => {
             />
             
             <View style={styles.footerContainer}>
-                <TouchableOpacity style={styles.smallButton} onPress={() => navigation.navigate('BaselineTest')}>
-                    <Text>Baseline Test</Text>
+                <TouchableOpacity style={styles.footerButton} onPress={() => {}}>
+                    <Text>Create Post</Text>
                 </TouchableOpacity>
                 
-                <TouchableOpacity style={styles.bigButton} onPress={() => navigation.navigate('CreateGoal')}>
-                    <Text>Create Goal</Text>
+                <TouchableOpacity style={styles.footerButton} onPress={() => {}}>
+                    <Text>Feed</Text>
                 </TouchableOpacity>
                 
-                <TouchableOpacity style={styles.smallButton} onPress={handleLogout}>
-                    <Text>Logout</Text>
+                <TouchableOpacity style={styles.footerButton} onPress={() => {}}>
+                    <Text>Create Plan</Text>
                 </TouchableOpacity>
             </View>
 
@@ -269,22 +258,13 @@ const styles = StyleSheet.create({
         left: '5%',
         right: '5%'
     },
-    smallButton: {
+    footerButton: {
         flex: 1,
         justifyContent: 'center',
         alignItems: 'center',
         height: 40,
         margin: 5,
         backgroundColor: '#e0e0e0',
-        borderRadius: 8
-    },
-    bigButton: {
-        flex: 2,
-        justifyContent: 'center',
-        alignItems: 'center',
-        height: 40,
-        margin: 5,
-        backgroundColor: '#4CAF50',
         borderRadius: 8
     },
     settingsButton: {
