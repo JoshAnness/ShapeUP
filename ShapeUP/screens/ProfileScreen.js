@@ -242,7 +242,7 @@ const styles = StyleSheet.create({
         marginBottom: '10%'
     },
     headerContainer: {
-        flexDirection: 'column',  // <-- Change this from 'row' to 'column'
+        flexDirection: 'column',
         alignItems: 'center',
         justifyContent: 'center',
         marginTop: '15%',
@@ -274,7 +274,7 @@ const styles = StyleSheet.create({
         zIndex: 1  
     },
     settingsIcon: {
-        width: 35,  // Or the size you prefer
+        width: 35,
         height: 35,
         resizeMode: 'contain'
     },
