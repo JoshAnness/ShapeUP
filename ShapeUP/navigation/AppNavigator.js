@@ -9,6 +9,8 @@ import LoginScreen from '../screens/LoginScreen';
 import RegisterScreen from '../screens/RegisterScreen';
 import { signOut } from 'firebase/auth';
 import { auth } from '../firebase';
+import SettingsScreen from '../screens/SettingsScreen';
+
 
 const Stack = createStackNavigator();
 
@@ -70,6 +72,13 @@ const AppNavigator = () => (
       component={GoalDetailsScreen} 
       options={{ title: 'Goal Details' }}
     />
+
+    <Stack.Screen 
+          name="Settings" 
+          component={SettingsScreen} 
+          options={{ title: 'Settings' }}
+    />
+
   </Stack.Navigator>
 );
 

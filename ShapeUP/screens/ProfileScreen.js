@@ -6,6 +6,7 @@ import { getDoc, doc, updateDoc } from 'firebase/firestore';
 import { db, storage } from '../firebase';
 import * as ImagePicker from 'expo-image-picker';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import SegmentedControl from '@react-native-segmented-control/segmented-control';
 
 const DATA = [
     {
@@ -35,6 +36,7 @@ const ProfileScreen = ({ navigation }) => {
     const [firstName, setFirstName] = useState("");
     const [lastName, setLastName] = useState("");
     const [userProfilePic, setUserProfilePic] = useState(null);
+    const [selectedButton, setSelectedButton] = useState('Posts');
 
     useEffect(() => {
         if (auth.currentUser) {
@@ -45,8 +47,8 @@ const ProfileScreen = ({ navigation }) => {
                         const data = docSnapshot.data();
                         setFirstName(data.firstName);
                         setLastName(data.lastName);
-                        if (data.userImg) { // Check if userImg is available in the document
-                            setUserProfilePic(data.userImg); // Set the image URL to the userProfilePic state
+                        if (data.userImg) { 
+                            setUserProfilePic(data.userImg); 
                         }
                     }                    
                 })
@@ -73,7 +75,6 @@ const ProfileScreen = ({ navigation }) => {
         
             const uploadTask = await uploadBytes(storageRef, blob);
     
-            // Wait for the upload to complete
             await uploadTask;
         
             console.log('Upload to Firebase complete');
@@ -116,16 +117,9 @@ const ProfileScreen = ({ navigation }) => {
         }
     };      
 
-    const handleLogout = () => {
-        signOut(auth)
-            .then(() => {
-                console.log('Logged out');
-                navigation.replace('Login');
-            })
-            .catch((error) => {
-                console.error('Error logging out:', error);
-            });
-    }
+    const handleToggle = (button) => {
+        setSelectedButton(button);
+    };
 
     return (
         <View style={styles.container}>
@@ -137,6 +131,27 @@ const ProfileScreen = ({ navigation }) => {
                     />
                 </TouchableOpacity>
                 <Text style={styles.header}>{firstName && lastName ? `${firstName} ${lastName}` : "User"}</Text>
+            </View>
+
+            <View style={styles.mainContainer}>
+                <TouchableOpacity 
+                    style={[
+                        styles.mainButton,
+                        selectedButton === 'Posts' ? styles.selectedButton : styles.deselectedButton
+                    ]}
+                    onPress={() => handleToggle('Posts')}
+                >
+                    <Text style={styles.mainButtonText}>Posts</Text>
+                </TouchableOpacity>
+                <TouchableOpacity 
+                    style={[
+                        styles.mainButton,
+                        selectedButton === 'Plans' ? styles.selectedButton : styles.deselectedButton
+                    ]}
+                    onPress={() => handleToggle('Plans')}
+                >
+                    <Text style={styles.mainButtonText}>Plans</Text>
+                </TouchableOpacity>
             </View>
             
             <FlatList
@@ -152,18 +167,25 @@ const ProfileScreen = ({ navigation }) => {
             />
             
             <View style={styles.footerContainer}>
-                <TouchableOpacity style={styles.smallButton} onPress={() => navigation.navigate('BaselineTest')}>
-                    <Text>Baseline Test</Text>
+                <TouchableOpacity style={styles.footerButton} onPress={() => {}}>
+                    <Text>Create Post</Text>
                 </TouchableOpacity>
                 
-                <TouchableOpacity style={styles.bigButton} onPress={() => navigation.navigate('CreateGoal')}>
-                    <Text>Create Goal</Text>
+                <TouchableOpacity style={styles.footerButton} onPress={() => {}}>
+                    <Text>Feed</Text>
                 </TouchableOpacity>
                 
-                <TouchableOpacity style={styles.smallButton} onPress={handleLogout}>
-                    <Text>Logout</Text>
+                <TouchableOpacity style={styles.footerButton} onPress={() => {}}>
+                    <Text>Create Plan</Text>
                 </TouchableOpacity>
             </View>
+
+            <TouchableOpacity style={styles.settingsButton} onPress={() => navigation.navigate('Settings')}>
+                <Image 
+                    source={require('../assets/settingsIcon.png')}
+                    style={styles.settingsIcon} 
+                />
+            </TouchableOpacity>
         </View>
     );
 }
@@ -236,7 +258,7 @@ const styles = StyleSheet.create({
         left: '5%',
         right: '5%'
     },
-    smallButton: {
+    footerButton: {
         flex: 1,
         justifyContent: 'center',
         alignItems: 'center',
@@ -245,15 +267,47 @@ const styles = StyleSheet.create({
         backgroundColor: '#e0e0e0',
         borderRadius: 8
     },
-    bigButton: {
-        flex: 2,
+    settingsButton: {
+        position: 'absolute', 
+        top: 50,
+        right: 25,
+        zIndex: 1  
+    },
+    settingsIcon: {
+        width: 35,  // Or the size you prefer
+        height: 35,
+        resizeMode: 'contain'
+    },
+    mainContainer: {
+        flexDirection: 'row',
+        justifyContent: 'center',
+        alignItems: 'center'
+    },
+    mainButton: {
+        flex: 1,
+        height: 45,
+        margin: 10,
+        borderRadius: 8,
+        backgroundColor: '#4CAF50',
         justifyContent: 'center',
         alignItems: 'center',
-        height: 40,
-        margin: 5,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.3,
+        shadowRadius: 4,
+        elevation: 4
+    },
+    mainButtonText: {
+        color: '#FFF',
+        fontWeight: 'bold',
+        fontSize: 16
+    },
+    selectedButton: {
         backgroundColor: '#4CAF50',
-        borderRadius: 8
-    }
+    },
+    deselectedButton: {
+        backgroundColor: '#A5D6A7', 
+    },  
 });
 
 export default ProfileScreen;
