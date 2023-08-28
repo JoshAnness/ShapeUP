@@ -279,7 +279,7 @@ const ProfileScreen = ({ navigation }) => {
                     <Text>Create Post</Text>
                 </TouchableOpacity>
  
-                <TouchableOpacity style={styles.footerButton} onPress={() => {}}>
+                <TouchableOpacity style={styles.footerButton} onPress={() => navigation.navigate('Feed')}>
                     <Text>Feed</Text>
                 </TouchableOpacity>
                 

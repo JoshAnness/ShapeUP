@@ -10,7 +10,7 @@ import RegisterScreen from '../screens/RegisterScreen';
 import { signOut } from 'firebase/auth';
 import { auth } from '../firebase';
 import SettingsScreen from '../screens/SettingsScreen';
-
+import FeedScreen from '../screens/FeedScreen';
 
 const Stack = createStackNavigator();
 
@@ -77,6 +77,12 @@ const AppNavigator = () => (
           name="Settings" 
           component={SettingsScreen} 
           options={{ title: 'Settings' }}
+    />
+
+    <Stack.Screen 
+      name="Feed" 
+      component={FeedScreen} 
+      options={{ title: 'Feed' }}
     />
 
   </Stack.Navigator>
