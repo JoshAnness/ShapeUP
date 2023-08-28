@@ -3,15 +3,23 @@ import { View, TextInput, TouchableOpacity, Text, StyleSheet } from 'react-nativ
 import { auth, db } from '../firebase'; 
 import { createUserWithEmailAndPassword } from 'firebase/auth';
 import { useNavigation } from '@react-navigation/core';
-import { setDoc, doc } from 'firebase/firestore';
+import { setDoc, doc, getDoc } from 'firebase/firestore';
 
 const RegisterScreen = () => {
     const [firstName, setFirstName] = useState(''); // Added firstName state
     const [lastName, setLastName] = useState(''); // Added lastName state
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
+    const [username, setUsername] = useState('');
 
     const navigation = useNavigation();
+
+    const isUsernameTaken = async (username) => {
+        const usernameRef = doc(db, 'users', username);
+        const usernameDoc = await getDoc(usernameRef);
+        
+        return usernameDoc.exists();
+    }    
 
     const handleSignUp = () => {
         createUserWithEmailAndPassword(auth, email, password)
@@ -24,6 +32,7 @@ const RegisterScreen = () => {
                     firstName: firstName,
                     lastName: lastName,
                     email: email,
+                    username: username,
                     userImg: null
                 });
 
@@ -46,6 +55,12 @@ const RegisterScreen = () => {
                     placeholder="Last Name"
                     value={lastName}
                     onChangeText={text => setLastName(text)}
+                    style={styles.input}
+                />
+                <TextInput 
+                    placeholder="Username"
+                    value={username}
+                    onChangeText={text => setUsername(text)}
                     style={styles.input}
                 />
                 <TextInput 
