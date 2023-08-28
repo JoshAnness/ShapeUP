@@ -1,21 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, FlatList, TouchableOpacity, Image, Alert, TextInput, Modal } from 'react-native';
 import { auth } from '../firebase';
-import { getDoc, doc, updateDoc, addDoc, collection } from 'firebase/firestore';
+import { getDoc, doc, updateDoc, addDoc, collection, query, where, onSnapshot } from 'firebase/firestore';
 import { db, storage } from '../firebase';
 import * as ImagePicker from 'expo-image-picker';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import SegmentedControl from '@react-native-segmented-control/segmented-control';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
-
-const Item = ({ title, progress, onPress }) => (
-    <TouchableOpacity style={styles.item} onPress={onPress}>
-        <Text style={styles.itemTitle}>{title}</Text>
-        <View style={styles.progressBarContainer}>
-            <View style={{ ...styles.progressBar, width: `${progress}%` }} />
-        </View>
-    </TouchableOpacity>
-);
 
 const ProfileScreen = ({ navigation }) => {
 
@@ -27,26 +18,63 @@ const ProfileScreen = ({ navigation }) => {
     const [postMedia, setPostMedia] = useState(null);
     const [postMediaType, setPostMediaType] = useState(null);
     const [isPostModalVisible, setIsPostModalVisible] = useState(false);
+    const [userPosts, setUserPosts] = useState([]);
 
     useEffect(() => {
-        if (auth.currentUser) {
-            const userRef = doc(db, 'users', auth.currentUser.uid);
-            getDoc(userRef)
-                .then(docSnapshot => {
-                    if (docSnapshot.exists()) {
-                        const data = docSnapshot.data();
-                        setFirstName(data.firstName);
-                        setLastName(data.lastName);
-                        if (data.userImg) { 
-                            setUserProfilePic(data.userImg); 
-                        }
-                    }                    
-                })
-                .catch(error => {
-                    console.error("Error fetching user data:", error);
+        const fetchUserDataAndPosts = async () => {
+            if (auth.currentUser) {
+                // Fetch user data
+                const userRef = doc(db, 'users', auth.currentUser.uid);
+                const docSnapshot = await getDoc(userRef);
+    
+                if (docSnapshot.exists()) {
+                    setFirstName(docSnapshot.data().firstName || "");
+                    setLastName(docSnapshot.data().lastName || "");
+                    setUserProfilePic(docSnapshot.data().userImg || null);
+                } else {
+                    console.warn("User document doesn't exist");
+                }
+    
+                // Fetch user posts
+                const postsCollectionRef = collection(db, 'posts');
+                const q = query(postsCollectionRef, where("userId", "==", auth.currentUser.uid));
+    
+                const unsubscribe = onSnapshot(q, (querySnapshot) => {
+                    const userPosts = [];
+                    querySnapshot.forEach((doc) => {
+                        userPosts.push(doc.data());
+                    });
+                    setUserPosts(userPosts);
                 });
+    
+                // Return the cleanup function to unsubscribe from the listener
+                return () => unsubscribe();
+            }
+        };
+    
+        fetchUserDataAndPosts();
+        
+    }, [auth.currentUser]);    
+
+    const Item = ({ title, media, mediaType, onPress }) => (
+        <TouchableOpacity style={styles.item} onPress={onPress}>
+            <Text style={styles.itemTitle}>{title}</Text>
+            {mediaType === 'image' && <Image source={{ uri: media }} style={{ width: '100%', height: 200 }} />}
+            {mediaType === 'video'}
+        </TouchableOpacity>
+    );    
+
+    const fetchUserPosts = async () => {
+        if (auth.currentUser) {
+            const postsCollectionRef = collection(db, 'posts');
+            const query = query(postsCollectionRef, where("userId", "==", auth.currentUser.uid), orderBy("timestamp", "desc"));
+            
+            const querySnapshot = await getDocs(query);
+            const posts = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            
+            setUserPosts(posts);
         }
-    }, []);
+    };
 
     const selectPostMedia = async () => {
         let result = await ImagePicker.launchImageLibraryAsync({
@@ -83,6 +111,7 @@ const ProfileScreen = ({ navigation }) => {
             setPostText("");
             setPostMedia(null);
             setPostMediaType(null);
+            setIsPostModalVisible(false);
         } else {
             Alert.alert('Error', 'Please enter text or add an image/video.');
         }
@@ -227,6 +256,23 @@ const ProfileScreen = ({ navigation }) => {
                     </KeyboardAwareScrollView>
                 </View>
             </Modal>
+
+            <View style={styles.postsContainer}>
+                {selectedButton === 'Posts' && (
+                    <FlatList
+                        data={userPosts}
+                        keyExtractor={(item, index) => index.toString()}
+                        renderItem={({ item }) => (
+                            <Item 
+                                title={item.text} 
+                                media={item.media}
+                                mediaType={item.mediaType}
+                                onPress={() => console.log('Post clicked')} 
+                            />
+                        )}
+                    />           
+                )}
+            </View>
             
             <View style={styles.footerContainer}>
                 <TouchableOpacity style={styles.footerButton} onPress={() => setIsPostModalVisible(true)}>
@@ -271,7 +317,7 @@ const styles = StyleSheet.create({
         textAlign: 'center'
     },
     item: {
-        width: '95%',
+        width: '100%',
         padding: 15,
         marginVertical: 10,
         borderColor: '#ccc',
@@ -285,17 +331,6 @@ const styles = StyleSheet.create({
         fontWeight: '500',
         marginBottom: 10,
         textAlign: 'center'
-    },
-    progressBarContainer: {
-        height: 25,
-        width: '90%',
-        backgroundColor: '#e0e0e0',
-        borderRadius: 10
-    },
-    progressBar: {
-        height: '100%',
-        backgroundColor: '#4CAF50',
-        borderRadius: 10
     },
     profileImage: {
         width: 150,
@@ -396,7 +431,18 @@ const styles = StyleSheet.create({
         textAlign: "center",
         fontWeight: 'bold',
         fontSize: 20
-    }      
+    },
+    postsContainer: {
+        flex: 1,
+        width: '100%',
+        marginBottom: '20%',
+        marginVertical: 10, 
+        borderColor: '#ccc',
+        borderWidth: 1.5,
+        borderRadius: 10,
+        backgroundColor: '#ffffff',
+        overflow: 'hidden' 
+    },
 });
 
 export default ProfileScreen;
