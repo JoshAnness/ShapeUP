@@ -1,26 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, Image, Alert } from 'react-native';
-import { signOut } from "firebase/auth";
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, Image, Alert, TextInput, Modal } from 'react-native';
 import { auth } from '../firebase';
-import { getDoc, doc, updateDoc } from 'firebase/firestore';
+import { getDoc, doc, updateDoc, addDoc, collection } from 'firebase/firestore';
 import { db, storage } from '../firebase';
 import * as ImagePicker from 'expo-image-picker';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import SegmentedControl from '@react-native-segmented-control/segmented-control';
-
-const DATA = [
-    {
-        id: '1',
-        title: 'Lose Weight',
-        progress: 50
-    },
-    {
-        id: '2',
-        title: 'Build Muscle',
-        progress: 30
-    },
-    // More data...
-];
+import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 
 const Item = ({ title, progress, onPress }) => (
     <TouchableOpacity style={styles.item} onPress={onPress}>
@@ -37,6 +23,10 @@ const ProfileScreen = ({ navigation }) => {
     const [lastName, setLastName] = useState("");
     const [userProfilePic, setUserProfilePic] = useState(null);
     const [selectedButton, setSelectedButton] = useState('Posts');
+    const [postText, setPostText] = useState("");
+    const [postMedia, setPostMedia] = useState(null);
+    const [postMediaType, setPostMediaType] = useState(null);
+    const [isPostModalVisible, setIsPostModalVisible] = useState(false);
 
     useEffect(() => {
         if (auth.currentUser) {
@@ -57,6 +47,46 @@ const ProfileScreen = ({ navigation }) => {
                 });
         }
     }, []);
+
+    const selectPostMedia = async () => {
+        let result = await ImagePicker.launchImageLibraryAsync({
+            mediaTypes: ImagePicker.MediaTypeOptions.All,
+            allowsEditing: true,
+            aspect: [4, 3],
+            quality: 1,
+        });
+    
+        if (!result.canceled) {
+            const uri = result.assets[0].uri;
+            const mediaType = result.assets[0].mediaType;
+    
+            setPostMedia(uri);  
+            setPostMediaType(mediaType);
+    
+            const downloadURL = await uploadImage(uri);
+            setPostMedia(downloadURL);
+        }
+    }; 
+    
+    const createPost = async () => {
+        if (postText || postMedia) {
+            const postsCollectionRef = collection(db, 'posts');
+            const mediaType = postMedia ? 'image' : 'video';
+            await addDoc(postsCollectionRef, {
+                text: postText,
+                media: postMedia,
+                mediaType: mediaType,
+                userId: auth.currentUser.uid,
+                timestamp: new Date().toISOString()
+            });
+            console.log('Post created.');
+            setPostText("");
+            setPostMedia(null);
+            setPostMediaType(null);
+        } else {
+            Alert.alert('Error', 'Please enter text or add an image/video.');
+        }
+    };    
 
     const uploadImage = async (uri) => {
         try {
@@ -154,23 +184,55 @@ const ProfileScreen = ({ navigation }) => {
                 </TouchableOpacity>
             </View>
             
-            <FlatList
-                data={DATA}
-                renderItem={({ item }) => (
-                    <Item 
-                        title={item.title} 
-                        progress={item.progress} 
-                        onPress={() => navigation.navigate('GoalDetails', { goalId: item.id })}
-                    />
-                )}
-                keyExtractor={item => item.id}
-            />
+            <Modal
+                animationType="slide"
+                transparent={true}
+                visible={isPostModalVisible}
+                onRequestClose={() => {
+                    Alert.alert("Modal has been closed.");
+                    setIsPostModalVisible(!isPostModalVisible);
+                }}
+            >
+                <View style={styles.centeredView}>
+                    <KeyboardAwareScrollView>
+                        <View style={styles.modalView}>
+                            <Text style={styles.modalText}>Create a Post</Text>
+                            <TextInput
+                                style={{ borderColor: 'gray', borderWidth: 1, padding: 10, borderRadius: 5 }}
+                                multiline
+                                numberOfLines={3}
+                                placeholder="What's on your mind?"
+                                value={postText}
+                                onChangeText={setPostText}
+                            />
+                            <TouchableOpacity onPress={selectPostMedia} style={{ marginTop: 10 }}>
+                                <Text>Add Image/Video</Text>
+                            </TouchableOpacity>
+                            {postMedia && (
+                                postMediaType === 'image' ?
+                                <Image source={{ uri: postMedia }} style={{ width: 100, height: 100, marginTop: 10 }} />
+                                : 
+                                <Text>Video selected. Preview component goes here.</Text>
+                            )}
+                            <TouchableOpacity style={styles.footerButton} onPress={createPost}>
+                                <Text>Create Post</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                                style={[styles.footerButton, { backgroundColor: "red" }]}
+                                onPress={() => setIsPostModalVisible(false)}
+                            >
+                                <Text style={{ color: 'white' }}>Cancel</Text>
+                            </TouchableOpacity>
+                        </View>
+                    </KeyboardAwareScrollView>
+                </View>
+            </Modal>
             
             <View style={styles.footerContainer}>
-                <TouchableOpacity style={styles.footerButton} onPress={() => {}}>
+                <TouchableOpacity style={styles.footerButton} onPress={() => setIsPostModalVisible(true)}>
                     <Text>Create Post</Text>
                 </TouchableOpacity>
-                
+ 
                 <TouchableOpacity style={styles.footerButton} onPress={() => {}}>
                     <Text>Feed</Text>
                 </TouchableOpacity>
@@ -307,7 +369,34 @@ const styles = StyleSheet.create({
     },
     deselectedButton: {
         backgroundColor: '#A5D6A7', 
-    },  
+    },
+    centeredView: {
+        flex: 1,
+        marginTop: '100%',
+        marginHorizontal: '5%',
+    },
+    modalView: {
+        height: '100%',
+        width: '100%',
+        backgroundColor: "white",
+        borderRadius: 20,
+        padding: 35,
+        alignItems: "center",
+        shadowColor: "#000",
+        shadowOffset: {
+            width: 0,
+            height: 2
+        },
+        shadowOpacity: 0.1,
+        shadowRadius: 2,
+        elevation: 5
+    },
+    modalText: {
+        marginBottom: '5%',
+        textAlign: "center",
+        fontWeight: 'bold',
+        fontSize: 20
+    }      
 });
 
 export default ProfileScreen;
