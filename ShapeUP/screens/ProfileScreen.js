@@ -19,6 +19,7 @@ const ProfileScreen = ({ navigation }) => {
     const [postMediaType, setPostMediaType] = useState(null);
     const [isPostModalVisible, setIsPostModalVisible] = useState(false);
     const [userPosts, setUserPosts] = useState([]);
+    const [username, setUsername] = useState("");
 
     useEffect(() => {
         const fetchUserDataAndPosts = async () => {
@@ -31,6 +32,7 @@ const ProfileScreen = ({ navigation }) => {
                     setFirstName(docSnapshot.data().firstName || "");
                     setLastName(docSnapshot.data().lastName || "");
                     setUserProfilePic(docSnapshot.data().userImg || null);
+                    setUsername(docSnapshot.data().username || ""); 
                 } else {
                     console.warn("User document doesn't exist");
                 }
@@ -190,6 +192,7 @@ const ProfileScreen = ({ navigation }) => {
                     />
                 </TouchableOpacity>
                 <Text style={styles.header}>{firstName && lastName ? `${firstName} ${lastName}` : "User"}</Text>
+                {username && <Text style={styles.username}>@{username}</Text>}
             </View>
 
             <View style={styles.mainContainer}>
@@ -310,7 +313,7 @@ const styles = StyleSheet.create({
         alignItems: 'center'
     },
     header: {
-        marginBottom: 20,
+        marginBottom: 5,
         fontSize: 24,
         fontWeight: 'bold',
         color: '#333',
@@ -443,6 +446,10 @@ const styles = StyleSheet.create({
         backgroundColor: '#ffffff',
         overflow: 'hidden' 
     },
+    username: {
+        color: '#888',
+        fontSize: 16
+    }    
 });
 
 export default ProfileScreen;
