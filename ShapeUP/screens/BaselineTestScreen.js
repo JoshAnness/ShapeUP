@@ -1,112 +1,113 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, StyleSheet, Button, Alert } from 'react-native';
+import { View, Text, TextInput, StyleSheet, Button, Alert, ScrollView } from 'react-native';
+import Checkbox from 'expo-checkbox';
+import { auth, db } from '../firebase';
+import { setDoc, doc } from 'firebase/firestore';
 import { Picker } from '@react-native-picker/picker';
-import { auth } from '../firebase';
-import { addDoc, collection, setDoc, doc } from 'firebase/firestore';
-import { db } from '../firebase';
 
 const BaselineTestScreen = ({ navigation }) => {
+  const [currentStep, setCurrentStep] = useState(1);
   const [age, setAge] = useState("");
   const [weight, setWeight] = useState("");
-  const [height, setHeight] = useState("");
+  const [heightFeet, setHeightFeet] = useState("4");
+  const [heightInches, setHeightInches] = useState("0");
   const [sex, setSex] = useState("male");
+  const [exerciseTypes, setExerciseTypes] = useState([]);
+  const [fitnessLevel, setFitnessLevel] = useState("");
+  const [equipment, setEquipment] = useState([]);
+  const [exerciseFrequency, setExerciseFrequency] = useState("");
+
+  const handleNextStep = () => {
+    setCurrentStep(currentStep + 1);
+  };
 
   const handleBaselineSubmit = async () => {
-    // Validate the inputs
-    if (age < 18 || age > 100) {
-      Alert.alert("Invalid Age", "Please enter an age between 18 and 100.");
-      return;
-    }
-
-    if (height < 21 || height > 110) {
-      Alert.alert("Invalid Height", "Please enter a height between 21 and 110 inches.");
-      return;
-    }
-
-    if (!sex || (sex !== "male" && sex !== "female")) {
-      Alert.alert("Invalid Sex", "Please select either Male or Female for sex.");
-      return;
-    }
 
     try {
       const baselineTestRef = doc(db, 'baselineTests', auth.currentUser.uid);
       await setDoc(baselineTestRef, {
-          age: parseInt(age),
-          weight: parseInt(weight),
-          height: parseInt(height),
-          sex: sex
+        age: parseInt(age),
+        weight: parseInt(weight),
+        heightFeet: heightFeet,
+        heightInches: heightInches,
+        sex: sex,
+        exerciseTypes: exerciseTypes,
+        fitnessLevel: fitnessLevel,
+        equipment: equipment,
+        exerciseFrequency: exerciseFrequency
       });
-      
+
       navigation.replace('Profile');
     } catch (error) {
-        Alert.alert("Error", "There was an issue saving your data. Please try again.");
-        console.error("Error adding baseline test: ", error);
+      Alert.alert("Error", "There was an issue saving your data. Please try again.");
+      console.error("Error adding baseline test: ", error);
     }
   };
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.header}>Baseline Test</Text>
-
-      <TextInput
-        style={styles.input}
-        placeholder="Age"
-        keyboardType="numeric"
-        value={age}
-        onChangeText={(text) => {
-          if (!isNaN(text)) {
-            setAge(text);
-          }
-        }}
-      />
-
-      <TextInput
-        style={styles.input}
-        placeholder="Weight (in lbs)"
-        keyboardType="numeric"
-        value={weight}
-        onChangeText={(text) => {
-          if (!isNaN(text)) {
-            setWeight(text);
-          }
-        }}
-      />
-
-      <TextInput
-        style={styles.input}
-        placeholder="Height (in inches)"
-        keyboardType="numeric"
-        value={height}
-        onChangeText={(text) => {
-          if (!isNaN(text)) {
-            setHeight(text);
-          }
-        }}
-      />
-
-      <View style={styles.pickerContainer}>
-        <Picker
-          selectedValue={sex}
-          onValueChange={(itemValue) => setSex(itemValue)}
-          style={styles.picker}
-        >
-          <Picker.Item label="Male" value="male" />
-          <Picker.Item label="Female" value="female" />
-        </Picker>
-      </View>
-
-      <Button title="Submit" onPress={handleBaselineSubmit} style={styles.submitButton} />
-    </View>
+    <ScrollView contentContainerStyle={styles.container}>
+      {currentStep === 1 && (
+        <View style={styles.section}>
+          <Text>What type of exercise do you do?</Text>
+          <Checkbox
+            style={styles.checkbox}
+            value={exerciseTypes.includes('Endurance')}
+            onValueChange={() => {
+              if (exerciseTypes.includes('Endurance')) {
+                setExerciseTypes(exerciseTypes.filter(type => type !== 'Endurance'));
+              } else {
+                setExerciseTypes([...exerciseTypes, 'Endurance']);
+              }
+            }}
+          />
+          <Text>Endurance</Text>
+          {/* Add other checkboxes similarly */}
+        </View>
+      )}
+      {currentStep === 2 && (
+        <View>
+          <Text>What is your fitness level?</Text>
+          <Picker selectedValue={fitnessLevel} onValueChange={(itemValue) => setFitnessLevel(itemValue)}>
+            <Picker.Item label="Beginner" value="beginner" />
+            <Picker.Item label="Intermediate" value="intermediate" />
+            <Picker.Item label="Advanced" value="advanced" />
+          </Picker>
+        </View>
+      )}
+      {currentStep === 3 && (
+        <View style={styles.section}>
+          <Text>What type of equipment do you have?</Text>
+          <Checkbox
+            style={styles.checkbox}
+            value={equipment.includes('Full gym')}
+            onValueChange={() => {
+              if (equipment.includes('Full gym')) {
+                setEquipment(equipment.filter(equip => equip !== 'Full gym'));
+              } else {
+                setEquipment([...equipment, 'Full gym']);
+              }
+            }}
+          />
+          <Text>Full gym</Text>
+          {/* Add other checkboxes similarly */}
+        </View>
+      )}
+      {/* Continue adding your questions */}
+      {currentStep < 9 ? (
+        <Button title="Next" onPress={handleNextStep} />
+      ) : (
+        <Button title="Submit" onPress={handleBaselineSubmit} />
+      )}
+    </ScrollView>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
-    justifyContent: 'top',
     padding: '5%',
     backgroundColor: '#f4f4f8',
-    alignItems: 'center'
+    alignItems: 'center',
+    justifyContent: 'flex-start',
   },
   header: {
     marginBottom: 20,
@@ -114,6 +115,15 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#333',
     textAlign: 'center'
+  },
+  section: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    width: '100%', // added this to make sure they stretch and align properly
+    marginBottom: 10, // added this for some spacing
+  },
+  checkbox: {
+    margin: 8,
   },
   input: {
     width: '95%',
