@@ -13,16 +13,10 @@ const ProfileScreen = ({ navigation }) => {
     const [firstName, setFirstName] = useState("");
     const [lastName, setLastName] = useState("");
     const [userProfilePic, setUserProfilePic] = useState(null);
-    const [selectedButton, setSelectedButton] = useState('Posts');
-    const [postText, setPostText] = useState("");
-    const [postMedia, setPostMedia] = useState(null);
-    const [postMediaType, setPostMediaType] = useState(null);
-    const [isPostModalVisible, setIsPostModalVisible] = useState(false);
-    const [userPosts, setUserPosts] = useState([]);
     const [username, setUsername] = useState("");
 
     useEffect(() => {
-        const fetchUserDataAndPosts = async () => {
+        const fetchUserData = async () => {
             if (auth.currentUser) {
                 // Fetch user data
                 const userRef = doc(db, 'users', auth.currentUser.uid);
@@ -37,87 +31,14 @@ const ProfileScreen = ({ navigation }) => {
                     console.warn("User document doesn't exist");
                 }
     
-                // Fetch user posts
-                const postsCollectionRef = collection(db, 'posts');
-                const q = query(postsCollectionRef, where("userId", "==", auth.currentUser.uid));
-    
-                const unsubscribe = onSnapshot(q, (querySnapshot) => {
-                    const userPosts = [];
-                    querySnapshot.forEach((doc) => {
-                        userPosts.push(doc.data());
-                    });
-                    setUserPosts(userPosts);
-                });
-    
                 // Return the cleanup function to unsubscribe from the listener
                 return () => unsubscribe();
             }
         };
     
-        fetchUserDataAndPosts();
+        fetchUserData();
         
     }, [auth.currentUser]);    
-
-    const Item = ({ title, media, mediaType, onPress }) => (
-        <TouchableOpacity style={styles.item} onPress={onPress}>
-            <Text style={styles.itemTitle}>{title}</Text>
-            {mediaType === 'image' && <Image source={{ uri: media }} style={{ width: '100%', height: 200 }} />}
-            {mediaType === 'video'}
-        </TouchableOpacity>
-    );    
-
-    const fetchUserPosts = async () => {
-        if (auth.currentUser) {
-            const postsCollectionRef = collection(db, 'posts');
-            const query = query(postsCollectionRef, where("userId", "==", auth.currentUser.uid), orderBy("timestamp", "desc"));
-            
-            const querySnapshot = await getDocs(query);
-            const posts = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-            
-            setUserPosts(posts);
-        }
-    };
-
-    const selectPostMedia = async () => {
-        let result = await ImagePicker.launchImageLibraryAsync({
-            mediaTypes: ImagePicker.MediaTypeOptions.All,
-            allowsEditing: true,
-            aspect: [4, 3],
-            quality: 1,
-        });
-    
-        if (!result.canceled) {
-            const uri = result.assets[0].uri;
-            const mediaType = result.assets[0].mediaType;
-    
-            setPostMedia(uri);  
-            setPostMediaType(mediaType);
-    
-            const downloadURL = await uploadImage(uri);
-            setPostMedia(downloadURL);
-        }
-    }; 
-    
-    const createPost = async () => {
-        if (postText || postMedia) {
-            const postsCollectionRef = collection(db, 'posts');
-            const mediaType = postMedia ? 'image' : 'video';
-            await addDoc(postsCollectionRef, {
-                text: postText,
-                media: postMedia,
-                mediaType: mediaType,
-                userId: auth.currentUser.uid,
-                timestamp: new Date().toISOString()
-            });
-            console.log('Post created.');
-            setPostText("");
-            setPostMedia(null);
-            setPostMediaType(null);
-            setIsPostModalVisible(false);
-        } else {
-            Alert.alert('Error', 'Please enter text or add an image/video.');
-        }
-    };    
 
     const uploadImage = async (uri) => {
         try {
@@ -193,88 +114,6 @@ const ProfileScreen = ({ navigation }) => {
                 </TouchableOpacity>
                 <Text style={styles.header}>{firstName && lastName ? `${firstName} ${lastName}` : "User"}</Text>
                 {username && <Text style={styles.username}>@{username}</Text>}
-            </View>
-
-            <View style={styles.mainContainer}>
-                <TouchableOpacity 
-                    style={[
-                        styles.mainButton,
-                        selectedButton === 'Posts' ? styles.selectedButton : styles.deselectedButton
-                    ]}
-                    onPress={() => handleToggle('Posts')}
-                >
-                    <Text style={styles.mainButtonText}>Posts</Text>
-                </TouchableOpacity>
-                <TouchableOpacity 
-                    style={[
-                        styles.mainButton,
-                        selectedButton === 'Plans' ? styles.selectedButton : styles.deselectedButton
-                    ]}
-                    onPress={() => handleToggle('Plans')}
-                >
-                    <Text style={styles.mainButtonText}>Plans</Text>
-                </TouchableOpacity>
-            </View>
-            
-            <Modal
-                animationType="slide"
-                transparent={true}
-                visible={isPostModalVisible}
-                onRequestClose={() => {
-                    Alert.alert("Modal has been closed.");
-                    setIsPostModalVisible(!isPostModalVisible);
-                }}
-            >
-                <View style={styles.centeredView}>
-                    <KeyboardAwareScrollView>
-                        <View style={styles.modalView}>
-                            <Text style={styles.modalText}>Create a Post</Text>
-                            <TextInput
-                                style={{ borderColor: 'gray', borderWidth: 1, padding: 10, borderRadius: 5 }}
-                                multiline
-                                numberOfLines={3}
-                                placeholder="What's on your mind?"
-                                value={postText}
-                                onChangeText={setPostText}
-                            />
-                            <TouchableOpacity onPress={selectPostMedia} style={{ marginTop: 10 }}>
-                                <Text>Add Image/Video</Text>
-                            </TouchableOpacity>
-                            {postMedia && (
-                                postMediaType === 'image' ?
-                                <Image source={{ uri: postMedia }} style={{ width: 100, height: 100, marginTop: 10 }} />
-                                : 
-                                <Text>Video selected. Preview component goes here.</Text>
-                            )}
-                            <TouchableOpacity style={styles.footerButton} onPress={createPost}>
-                                <Text>Create Post</Text>
-                            </TouchableOpacity>
-                            <TouchableOpacity
-                                style={[styles.footerButton, { backgroundColor: "red" }]}
-                                onPress={() => setIsPostModalVisible(false)}
-                            >
-                                <Text style={{ color: 'white' }}>Cancel</Text>
-                            </TouchableOpacity>
-                        </View>
-                    </KeyboardAwareScrollView>
-                </View>
-            </Modal>
-
-            <View style={styles.postsContainer}>
-                {selectedButton === 'Posts' && (
-                    <FlatList
-                        data={userPosts}
-                        keyExtractor={(item, index) => index.toString()}
-                        renderItem={({ item }) => (
-                            <Item 
-                                title={item.text} 
-                                media={item.media}
-                                mediaType={item.mediaType}
-                                onPress={() => console.log('Post clicked')} 
-                            />
-                        )}
-                    />           
-                )}
             </View>
             
             <View style={styles.footerContainer}>
@@ -434,17 +273,6 @@ const styles = StyleSheet.create({
         textAlign: "center",
         fontWeight: 'bold',
         fontSize: 20
-    },
-    postsContainer: {
-        flex: 1,
-        width: '100%',
-        marginBottom: '20%',
-        marginVertical: 10, 
-        borderColor: '#ccc',
-        borderWidth: 1.5,
-        borderRadius: 10,
-        backgroundColor: '#ffffff',
-        overflow: 'hidden' 
     },
     username: {
         color: '#888',
