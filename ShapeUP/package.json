@@ -7,7 +7,7 @@
   },
   "dependencies": {
     "@firebase/firestore": "^4.1.2",
-    "@react-native-async-storage/async-storage": "~1.15.0",
+    "@react-native-async-storage/async-storage": "~1.19.3",
     "@react-native-community/checkbox": "^0.5.16",
     "@react-native-picker/picker": "2.2.1",
     "@react-native-segmented-control/segmented-control": "2.4.0",
