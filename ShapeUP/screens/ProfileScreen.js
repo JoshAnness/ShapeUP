@@ -115,20 +115,22 @@ const ProfileScreen = ({ navigation }) => {
                 <Text style={styles.header}>{firstName && lastName ? `${firstName} ${lastName}` : "User"}</Text>
                 {username && <Text style={styles.username}>@{username}</Text>}
             </View>
-            
+            <TouchableOpacity style={styles.button} onPress={() => navigation.navigate('CalendarIn')}>
+                <Text>Calendar</Text>
+            </TouchableOpacity>
             <View style={styles.footerContainer}>
-                <TouchableOpacity style={styles.footerButton} onPress={() => setIsPostModalVisible(true)}>
-                    <Text>Create Post</Text>
+                <TouchableOpacity style={styles.footerButton} onPress={() => navigation.navigate('Library')}>
+                    <Text>Library</Text>
                 </TouchableOpacity>
  
-                <TouchableOpacity style={styles.footerButton} onPress={() => navigation.navigate('Feed')}>
-                    <Text>Feed</Text>
+                <TouchableOpacity style={styles.footerButton} onPress={() => navigation.navigate('Tracker')}>
+                    <Text>Tracker</Text>
                 </TouchableOpacity>
                 
                 <TouchableOpacity style={styles.footerButton} onPress={() => {}}>
                     <Text>Create Plan</Text>
                 </TouchableOpacity>
-            </View>
+                </View>
 
             <TouchableOpacity style={styles.settingsButton} onPress={() => navigation.navigate('Settings')}>
                 <Image 
@@ -277,7 +279,14 @@ const styles = StyleSheet.create({
     username: {
         color: '#888',
         fontSize: 16
-    }    
+    },    
+    button: {
+        padding: 15,
+        margin: 10,
+        backgroundColor: '#4CAF50',
+        borderRadius: 8,
+        alignItems: 'center'
+    }
 });
 
 export default ProfileScreen;
