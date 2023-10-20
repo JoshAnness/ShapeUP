@@ -18,8 +18,9 @@ import ChestLibrary from '../screens/ChestLibrary';
 import LegLibrary from '../screens/LegLibrary';
 import WorkoutTracker from '../screens/WorkoutTracker';
 import TricepLibrary from '../screens/TricepLibrary';
-import Calendar from '../screens/Calendar';
-import CalendarInfo from '../screens/Calendar';
+import Calendar from '../screens/CalendarInfo';
+import CalendarInfo from '../screens/CalendarInfo';
+import DateDetails from '../screens/DateDetails';
 
 const Stack = createStackNavigator();
 
@@ -140,6 +141,11 @@ const AppNavigator = () => (
       name="CalendarIn" 
       component={CalendarInfo} 
       options={{ title: 'Calendar' }}
+    />
+    <Stack.Screen 
+      name="DateDetails" 
+      component={DateDetails} 
+      options={{ title: 'Details' }}
     />
 
 
