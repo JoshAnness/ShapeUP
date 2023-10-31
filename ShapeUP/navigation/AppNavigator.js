@@ -21,6 +21,7 @@ import TricepLibrary from '../screens/TricepLibrary';
 import Calendar from '../screens/CalendarInfo';
 import CalendarInfo from '../screens/CalendarInfo';
 import DateDetails from '../screens/DateDetails';
+import ChatGPT from '../screens/ChatGPT';
 
 const Stack = createStackNavigator();
 
@@ -148,6 +149,11 @@ const AppNavigator = () => (
       options={{ title: 'Details' }}
     />
 
+  <Stack.Screen 
+      name="Chat" 
+      component={ChatGPT} 
+      options={{ title: 'Chat With an Export' }}
+    />
 
   </Stack.Navigator>
 );

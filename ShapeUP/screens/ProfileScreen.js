@@ -118,6 +118,9 @@ const ProfileScreen = ({ navigation }) => {
             <TouchableOpacity style={styles.button} onPress={() => navigation.navigate('CalendarIn')}>
                 <Text>Calendar</Text>
             </TouchableOpacity>
+            <TouchableOpacity style={styles.button} onPress={() => navigation.navigate('Chat')}>
+                <Text>Chat with an Expert</Text>
+            </TouchableOpacity>
             <View style={styles.footerContainer}>
                 <TouchableOpacity style={styles.footerButton} onPress={() => navigation.navigate('Library')}>
                     <Text>Library</Text>
