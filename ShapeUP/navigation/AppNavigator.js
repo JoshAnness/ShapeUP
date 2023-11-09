@@ -144,7 +144,7 @@ const AppNavigator = () => (
       options={{ title: 'Calendar' }}
     />
     <Stack.Screen 
-      name="DateDetails" 
+      name="Details" 
       component={DateDetails} 
       options={{ title: 'Details' }}
     />
@@ -152,7 +152,7 @@ const AppNavigator = () => (
   <Stack.Screen 
       name="Chat" 
       component={ChatGPT} 
-      options={{ title: 'Chat With an Export' }}
+      options={{ title: 'Chat With an Expert' }}
     />
 
   </Stack.Navigator>
