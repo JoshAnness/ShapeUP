@@ -1,7 +1,6 @@
 import React from 'react';
 import { View } from 'react-native';
 import { Calendar } from 'react-native-calendars';
-import { format } from 'date-fns';
 
 function CalendarInfo({ navigation }) {
   const handleDayPress = (date) => {
