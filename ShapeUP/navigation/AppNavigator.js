@@ -11,6 +11,17 @@ import { signOut } from 'firebase/auth';
 import { auth } from '../firebase';
 import SettingsScreen from '../screens/SettingsScreen';
 import FeedScreen from '../screens/FeedScreen';
+import WorkoutLibrary from '../screens/WorkoutLibrary';
+import ArmLibrary from '../screens/ArmLibrary';
+import BackLibrary from '../screens/BackLibrary';
+import ChestLibrary from '../screens/ChestLibrary';
+import LegLibrary from '../screens/LegLibrary';
+import WorkoutTracker from '../screens/WorkoutTracker';
+import TricepLibrary from '../screens/TricepLibrary';
+import Calendar from '../screens/CalendarInfo';
+import CalendarInfo from '../screens/CalendarInfo';
+import DateDetails from '../screens/DateDetails';
+import ChatGPT from '../screens/ChatGPT';
 
 const Stack = createStackNavigator();
 
@@ -83,6 +94,65 @@ const AppNavigator = () => (
       name="Feed" 
       component={FeedScreen} 
       options={{ title: 'Feed' }}
+    />
+
+    <Stack.Screen 
+      name="Library" 
+      component={WorkoutLibrary} 
+      options={{ title: 'Library for Workouts' }}
+    /> 
+
+    <Stack.Screen 
+      name="Arm" 
+      component={ArmLibrary} 
+      options={{ title: 'Arm Workout Library' }}
+    />
+
+    <Stack.Screen 
+      name="Tricep" 
+      component={TricepLibrary} 
+      options={{ title: 'Tricep Library' }}
+    />
+    
+    <Stack.Screen 
+      name="Back" 
+      component={BackLibrary} 
+      options={{ title: 'Back Workout Library' }}
+    />
+
+    <Stack.Screen 
+      name="Chest" 
+      component={ChestLibrary} 
+      options={{ title: 'Chest Workout Library' }}
+    />
+
+    <Stack.Screen 
+      name="Leg" 
+      component={LegLibrary} 
+      options={{ title: 'Leg Workout Library' }}
+    />
+
+    <Stack.Screen 
+      name="Tracker" 
+      component={WorkoutTracker} 
+      options={{ title: 'Workout Tracker' }}
+    />
+
+    <Stack.Screen 
+      name="CalendarIn" 
+      component={CalendarInfo} 
+      options={{ title: 'Calendar' }}
+    />
+    <Stack.Screen 
+      name="Details" 
+      component={DateDetails} 
+      options={{ title: 'Details' }}
+    />
+
+  <Stack.Screen 
+      name="Chat" 
+      component={ChatGPT} 
+      options={{ title: 'Chat With an Expert' }}
     />
 
   </Stack.Navigator>
