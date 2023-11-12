@@ -2,18 +2,19 @@ const fs = require('fs');
 const path = require('path');
 
 const exercisesDir = './assets/exercises';
-const outputFilePath = 'imageMap.js';
+const outputFilePath = 'imageMapping.js';
 
 const escapeApostrophes = (str) => str.replace(/'/g, "\\'");
 
 const exerciseImageMap = {};
 
 fs.readdirSync(exercisesDir).forEach(exerciseDir => {
-  const exerciseImagesDir = path.join(exercisesDir, exerciseDir, 'images');
+  const sanitizedDir = escapeApostrophes(exerciseDir);
+  const exerciseImagesDir = path.join(exercisesDir, sanitizedDir, 'images');
   if (fs.existsSync(exerciseImagesDir)) {
-    exerciseImageMap[exerciseDir] = fs.readdirSync(exerciseImagesDir)
-      .filter(fileName => /\.(jpg|jpeg|png)$/.test(fileName)) // filter image files
-      .map(fileName => `require('${escapeApostrophes(path.join('../..', exerciseImagesDir, fileName))}')`);
+    exerciseImageMap[sanitizedDir] = fs.readdirSync(exerciseImagesDir)
+      .filter(fileName => /\.(jpg|jpeg|png)$/.test(fileName))
+      .map(fileName => `require('${escapeApostrophes(path.join('../', exerciseImagesDir, fileName))}')`);
   }
 });
 
