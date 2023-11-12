@@ -4,6 +4,7 @@ import { View, TextInput, Button, Text, ScrollView, Image, TouchableOpacity } fr
 import Checkbox from 'expo-checkbox';
 import { db, auth } from '../firebase';
 import { doc, getDoc } from 'firebase/firestore';
+import { getStorage, ref, getDownloadURL } from 'firebase/storage';
 import { imageMap } from '../imageMapping';
 
 const fetchBaselineTestData = async (userId) => {
@@ -44,13 +45,24 @@ const callOpenAI = async (input, userBaselineTest) => {
   return response.data.choices[0].message.content;
 };
 
-const fetchExerciseImages = (exerciseName) => {
-  const sanitizedExerciseName = exerciseName.replace(/\s+/g, '_').replace(/'/g, '').toLowerCase();
-  return imageMap[sanitizedExerciseName] || [];
+const storage = getStorage();
+
+const fetchExerciseImages = async (exerciseName) => {
+  const sanitizedExerciseName = exerciseName.replace(/\s+/g, '_').replace(/'/g, '');
+
+  // Assuming your images are stored as 'exerciseName_0.jpg' and 'exerciseName_1.jpg'
+  const imageUrls = await Promise.all(
+    [0, 1].map(async (index) => {
+      const imageRef = ref(storage, `exercise_images/${sanitizedExerciseName}_${index}.jpg`);
+      return getDownloadURL(imageRef).catch(() => null); // Return null if image not found
+    })
+  );
+
+  return imageUrls.filter(url => url !== null); // Filter out any null URLs
 };
 
 const getExerciseInstructions = (exerciseName) => {
-  return `Instructions for ${exerciseName}`;
+  
 };
 
 const ChatScreen = () => {
@@ -59,8 +71,7 @@ const ChatScreen = () => {
   const [workoutPlan, setWorkoutPlan] = useState([]);
   const [selectedExercise, setSelectedExercise] = useState(null);
   const [userExercisePlan, setUserExercisePlan] = useState([]);
-  const [exercises, setExercises] = useState([]);
-
+  
   useEffect(() => {
     if (auth.currentUser) {
       fetchBaselineTestData(auth.currentUser.uid).then((data) => {
@@ -96,11 +107,11 @@ const ChatScreen = () => {
     }
   };
 
-  const displayExerciseImages = (exerciseName) => {
-    const images = fetchExerciseImages(exerciseName);
+  const displayExerciseImages = async (exerciseName) => {
+    const images = await fetchExerciseImages(exerciseName);
     const instructions = getExerciseInstructions(exerciseName);
     setSelectedExercise({ name: exerciseName, images, instructions });
-  };  
+  };
 
   return (
     <View style={{ flex: 1, padding: 16 }}>
