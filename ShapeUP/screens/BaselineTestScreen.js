@@ -3,7 +3,26 @@ import { View, Text, TextInput, StyleSheet, Button, Alert, ScrollView, Touchable
 import Checkbox from 'expo-checkbox';
 import { auth, db } from '../firebase';
 import { setDoc, doc } from 'firebase/firestore';
-import { Picker } from '@react-native-picker/picker';
+
+const fitnessLevelMap = {
+  'Beginner': 'beginner',
+  'Intermediate': 'intermediate',
+  'Advanced': 'expert',
+};
+
+const equipmentMap = {
+  'Body Only': 'body only',
+  'Machines': 'machine',
+  'Barbells': 'barbell',
+  'Dumbells': 'dumbell',
+  'Kettlebells': 'kettlebells',
+  'Cable': 'cable',
+  'Bands': 'bands',
+  'Exercise Ball': 'exercise ball',
+  'E-Z Curl Bar': 'e-z curl bar',
+  'Foam Roll': 'foam roll',
+  'Medicine Ball': 'medicine ball',
+};
 
 const BaselineTestScreen = ({ navigation }) => {
   const [currentStep, setCurrentStep] = useState(1);
@@ -14,7 +33,6 @@ const BaselineTestScreen = ({ navigation }) => {
   //const [sex, setSex] = useState("male");
   const [fitnessLevel, setFitnessLevel] = useState("");
   const [selectedEquipment, setSelectedEquipment] = useState(new Set());
-  const [workoutFrequency, setWorkoutFrequency] = useState("");
 
   const handleNextStep = () => {
     setCurrentStep(currentStep + 1);
@@ -30,31 +48,26 @@ const BaselineTestScreen = ({ navigation }) => {
     setFitnessLevel(level);
   };
 
-  const selectWorkoutFrequency = (frequency) => {
-    setWorkoutFrequency(frequency);
-  };
-
   const handleBaselineSubmit = async () => {
     if (auth.currentUser) {
       const uid = auth.currentUser.uid;
+      const formattedFitnessLevel = fitnessLevelMap[fitnessLevel];
+      const formattedEquipment = Array.from(selectedEquipment).map(item => equipmentMap[item]);
+
       const baselineTestData = {
-        fitnessLevel: fitnessLevel,
-        selectedEquipment: Array.from(selectedEquipment), // Firestore doesn't support Set, so convert it to Array
-        workoutFrequency: workoutFrequency,
+        fitnessLevel: formattedFitnessLevel,
+        selectedEquipment: formattedEquipment,
       };
-      
+
       try {
-        // Save the baseline test data to the 'baselineTests' collection, under a document with the user's UID
         const baselineTestRef = doc(db, 'baselineTests', uid);
         await setDoc(baselineTestRef, baselineTestData, { merge: true });
-
         navigation.replace('Profile');
       } catch (error) {
         Alert.alert("Error", "There was an issue saving your data. Please try again.");
         console.error("Error adding baseline test: ", error);
       }
     } else {
-      // Handle the case where there is no authenticated user
       Alert.alert("Error", "You need to be logged in to save your data.");
     }
   };
@@ -131,27 +144,7 @@ const BaselineTestScreen = ({ navigation }) => {
         </View>
       )}
 
-      {currentStep === 3 && (
-        <>
-          <Text style={styles.mainQuestion}>How often will you work out per week?</Text>
-
-          {['1-2 days', '3-4 days', '5-6 days', 'Every day'].map((frequency) => (
-            <TouchableOpacity
-              key={frequency}
-              onPress={() => selectWorkoutFrequency(frequency)}
-              style={styles.option}
-            >
-              <Checkbox
-                style={styles.checkbox}
-                value={workoutFrequency === frequency}
-              />
-              <Text style={styles.answerText}>{frequency}</Text>
-            </TouchableOpacity>
-          ))}
-        </>
-      )}
-
-      {currentStep === 3 ? (
+      {currentStep === 2 ? (
         <Button title="Submit" onPress={handleBaselineSubmit} />
       ) : (
         <Button title="Next" onPress={handleNextStep} />
