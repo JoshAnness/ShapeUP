@@ -2,8 +2,6 @@ import React from 'react';
 import { createStackNavigator } from '@react-navigation/stack';
 import { View, Text, TouchableOpacity } from 'react-native';
 import ProfileScreen from '../screens/ProfileScreen';
-import CreateGoalScreen from '../screens/CreateGoalScreen';
-import GoalDetailsScreen from '../screens/GoalDetailsScreen';
 import BaselineTestScreen from '../screens/BaselineTestScreen';
 import LoginScreen from '../screens/LoginScreen';
 import RegisterScreen from '../screens/RegisterScreen';
@@ -12,16 +10,12 @@ import { auth } from '../firebase';
 import SettingsScreen from '../screens/SettingsScreen';
 import FeedScreen from '../screens/FeedScreen';
 import WorkoutLibrary from '../screens/WorkoutLibrary';
-import ArmLibrary from '../screens/ArmLibrary';
-import BackLibrary from '../screens/BackLibrary';
-import ChestLibrary from '../screens/ChestLibrary';
-import LegLibrary from '../screens/LegLibrary';
 import WorkoutTracker from '../screens/WorkoutTracker';
-import TricepLibrary from '../screens/TricepLibrary';
 import Calendar from '../screens/CalendarInfo';
 import CalendarInfo from '../screens/CalendarInfo';
 import DateDetails from '../screens/DateDetails';
 import ChatGPT from '../screens/ChatGPT';
+import WorkoutDetails from '../screens/WorkoutDetails';
 
 const Stack = createStackNavigator();
 
@@ -73,18 +67,6 @@ const AppNavigator = () => (
     />
 
     <Stack.Screen 
-      name="CreateGoal" 
-      component={CreateGoalScreen} 
-      options={{ title: 'Create New Goal' }}
-    />
-
-    <Stack.Screen 
-      name="GoalDetails" 
-      component={GoalDetailsScreen} 
-      options={{ title: 'Goal Details' }}
-    />
-
-    <Stack.Screen 
           name="Settings" 
           component={SettingsScreen} 
           options={{ title: 'Settings' }}
@@ -103,36 +85,6 @@ const AppNavigator = () => (
     /> 
 
     <Stack.Screen 
-      name="Arm" 
-      component={ArmLibrary} 
-      options={{ title: 'Arm Workout Library' }}
-    />
-
-    <Stack.Screen 
-      name="Tricep" 
-      component={TricepLibrary} 
-      options={{ title: 'Tricep Library' }}
-    />
-    
-    <Stack.Screen 
-      name="Back" 
-      component={BackLibrary} 
-      options={{ title: 'Back Workout Library' }}
-    />
-
-    <Stack.Screen 
-      name="Chest" 
-      component={ChestLibrary} 
-      options={{ title: 'Chest Workout Library' }}
-    />
-
-    <Stack.Screen 
-      name="Leg" 
-      component={LegLibrary} 
-      options={{ title: 'Leg Workout Library' }}
-    />
-
-    <Stack.Screen 
       name="Tracker" 
       component={WorkoutTracker} 
       options={{ title: 'Workout Tracker' }}
@@ -149,10 +101,16 @@ const AppNavigator = () => (
       options={{ title: 'Details' }}
     />
 
-  <Stack.Screen 
+    <Stack.Screen 
       name="Chat" 
       component={ChatGPT} 
-      options={{ title: 'Chat With an Expert' }}
+      options={{ title: 'AI Workout Creation' }}
+    />
+
+    <Stack.Screen 
+      name="WorkoutDetails" 
+      component={WorkoutDetails} 
+      options={{ title: 'Workout Details' }}
     />
 
   </Stack.Navigator>

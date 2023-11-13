@@ -1,20 +1,19 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, StyleSheet, Button, Alert, ScrollView, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, Button, ScrollView, TouchableOpacity } from 'react-native';
 import Checkbox from 'expo-checkbox';
 import { auth, db } from '../firebase';
 import { setDoc, doc } from 'firebase/firestore';
-import { Picker } from '@react-native-picker/picker';
+
+const fitnessLevelMap = {
+  'Beginner': 'beginner',
+  'Intermediate': 'intermediate',
+  'Advanced': 'expert',
+};
 
 const BaselineTestScreen = ({ navigation }) => {
   const [currentStep, setCurrentStep] = useState(1);
-  //const [age, setAge] = useState("");
-  //const [weight, setWeight] = useState("");
-  //const [heightFeet, setHeightFeet] = useState("4");
-  //const [heightInches, setHeightInches] = useState("0");
-  //const [sex, setSex] = useState("male");
-  const [fitnessLevel, setFitnessLevel] = useState("");
-  const [selectedEquipment, setSelectedEquipment] = useState(new Set());
-  const [workoutFrequency, setWorkoutFrequency] = useState("");
+  const [fitnessLevel, setFitnessLevel] = useState('');
+  const [selectedEquipmentCategory, setSelectedEquipmentCategory] = useState(new Set());
 
   const handleNextStep = () => {
     setCurrentStep(currentStep + 1);
@@ -24,70 +23,52 @@ const BaselineTestScreen = ({ navigation }) => {
     if (currentStep > 1) {
       setCurrentStep(currentStep - 1);
     }
-  };  
+  };
 
   const selectFitnessLevel = (level) => {
     setFitnessLevel(level);
   };
 
-  const selectWorkoutFrequency = (frequency) => {
-    setWorkoutFrequency(frequency);
+  const handleEquipmentSelection = (category) => {
+    setSelectedEquipmentCategory(category);
   };
 
   const handleBaselineSubmit = async () => {
     if (auth.currentUser) {
       const uid = auth.currentUser.uid;
+      const formattedFitnessLevel = fitnessLevelMap[fitnessLevel];
       const baselineTestData = {
-        fitnessLevel: fitnessLevel,
-        selectedEquipment: Array.from(selectedEquipment), // Firestore doesn't support Set, so convert it to Array
-        workoutFrequency: workoutFrequency,
+        fitnessLevel: formattedFitnessLevel,
+        selectedEquipmentCategory: selectedEquipmentCategory,
       };
-      
+
       try {
-        // Save the baseline test data to the 'baselineTests' collection, under a document with the user's UID
         const baselineTestRef = doc(db, 'baselineTests', uid);
         await setDoc(baselineTestRef, baselineTestData, { merge: true });
-
         navigation.replace('Profile');
       } catch (error) {
         Alert.alert("Error", "There was an issue saving your data. Please try again.");
         console.error("Error adding baseline test: ", error);
       }
     } else {
-      // Handle the case where there is no authenticated user
       Alert.alert("Error", "You need to be logged in to save your data.");
     }
   };
 
-  const handleEquipmentSelection = (item) => {
-    if (item === 'Body Only') {
-      // If 'Body Only' is selected, clear other selections
-      setSelectedEquipment(new Set([item]));
-    } else {
-      // For other items, ensure 'Body Only' is not selected
-      const newSelection = new Set(selectedEquipment);
-      newSelection.delete('Body Only'); // Remove 'Body Only' if present
-      if (newSelection.has(item)) {
-        newSelection.delete(item); // Toggle item if already selected
-      } else {
-        newSelection.add(item); // Add item to selection
-      }
-      setSelectedEquipment(newSelection);
-    }
-  };
-
-  // Function to render equipment options
-  const renderEquipmentOption = (item) => (
+  const renderEquipmentOption = (category, subtext) => (
     <TouchableOpacity
-      key={item}
-      onPress={() => handleEquipmentSelection(item)}
+      key={category}
+      onPress={() => handleEquipmentSelection(category)}
       style={styles.optionContainer}
     >
       <Checkbox
         style={styles.checkbox}
-        value={selectedEquipment.has(item)}
+        value={selectedEquipmentCategory === category}
       />
-      <Text style={styles.answerText}>{item}</Text>
+      <View style={styles.textContainer}>
+        <Text style={styles.answerText}>{category}</Text>
+        {subtext && <Text style={styles.subtext}>{subtext}</Text>}
+      </View>
     </TouchableOpacity>
   );
 
@@ -95,66 +76,48 @@ const BaselineTestScreen = ({ navigation }) => {
     <ScrollView contentContainerStyle={styles.container}>
       {currentStep === 1 && (
         <>
-
-        <Text style={styles.mainQuestion}>What is your fitness level?</Text>
-  
-        <TouchableOpacity onPress={() => selectFitnessLevel('Beginner')} style={styles.option}>
-          <Checkbox style={styles.checkbox} value={fitnessLevel.includes('Beginner')} />
-          <View style={styles.textContainer}>
-            <Text style={styles.answerText}>Beginner</Text>
-            <Text style={styles.subtext}>I haven't lifted weights or just started</Text>
-          </View>
-        </TouchableOpacity>
-  
-        <TouchableOpacity onPress={() => selectFitnessLevel('Intermediate')} style={styles.option}>
-          <Checkbox style={styles.checkbox} value={fitnessLevel.includes('Intermediate')} />
-          <View style={styles.textContainer}>
-            <Text style={styles.answerText}>Intermediate</Text>
-            <Text style={styles.subtext}>I've done common weighted exercises</Text>
-          </View>
-        </TouchableOpacity>
-  
-        <TouchableOpacity onPress={() => selectFitnessLevel('Advanced')} style={styles.option}>
-          <Checkbox style={styles.checkbox} value={fitnessLevel.includes('Advanced')} />
-          <View style={styles.textContainer}>
-            <Text style={styles.answerText}>Advanced</Text>
-            <Text style={styles.subtext}>I've been lifting weights for a while</Text>
-          </View>
-        </TouchableOpacity>
-      </>
-      )}
-      
-      {currentStep === 2 && (
-        <View style={styles.section}>
-          <Text style={styles.mainQuestion}>What type of equipment do you have?</Text>
-          {['Body Only', 'Machines', 'Barbells', 'Dumbells', 'Kettlebells', 'Cable', 'Bands', 'Exercise Ball', 'E-Z Curl Bar', 'Foam Roll', 'Medicine Ball'].map(renderEquipmentOption)}
-        </View>
-      )}
-
-      {currentStep === 3 && (
-        <>
-          <Text style={styles.mainQuestion}>How often will you work out per week?</Text>
-
-          {['1-2 days', '3-4 days', '5-6 days', 'Every day'].map((frequency) => (
-            <TouchableOpacity
-              key={frequency}
-              onPress={() => selectWorkoutFrequency(frequency)}
-              style={styles.option}
-            >
-              <Checkbox
-                style={styles.checkbox}
-                value={workoutFrequency === frequency}
-              />
-              <Text style={styles.answerText}>{frequency}</Text>
-            </TouchableOpacity>
-          ))}
+          <Text style={styles.mainQuestion}>What is your fitness level?</Text>
+          <TouchableOpacity onPress={() => selectFitnessLevel('Beginner')} style={styles.option}>
+            <Checkbox style={styles.checkbox} value={fitnessLevel.includes('Beginner')} />
+            <View style={styles.textContainer}>
+              <Text style={styles.answerText}>Beginner</Text>
+              <Text style={styles.subtext}>I haven't lifted weights or just started</Text>
+            </View>
+          </TouchableOpacity>
+          <TouchableOpacity onPress={() => selectFitnessLevel('Intermediate')} style={styles.option}>
+            <Checkbox style={styles.checkbox} value={fitnessLevel.includes('Intermediate')} />
+            <View style={styles.textContainer}>
+              <Text style={styles.answerText}>Intermediate</Text>
+              <Text style={styles.subtext}>I've done common weighted exercises</Text>
+            </View>
+          </TouchableOpacity>
+          <TouchableOpacity onPress={() => selectFitnessLevel('Advanced')} style={styles.option}>
+            <Checkbox style={styles.checkbox} value={fitnessLevel.includes('Advanced')} />
+            <View style={styles.textContainer}>
+              <Text style={styles.answerText}>Advanced</Text>
+              <Text style={styles.subtext}>I've been lifting weights for a while</Text>
+            </View>
+          </TouchableOpacity>
         </>
       )}
 
-      {currentStep === 3 ? (
+      {currentStep === 2 && (
+        <View style={styles.section}>
+          <Text style={styles.mainQuestion}>What type of equipment do you have?</Text>
+          {renderEquipmentOption('Body Only')}
+          {renderEquipmentOption('Home Gym', 'Foam Roll, Kettlebells, Dumbbell, Medicine Ball, Bands')}
+          {renderEquipmentOption('Full Gym', 'Machines and other advanced equipment')}
+        </View>
+      )}
+
+      {currentStep === 2 ? (
         <Button title="Submit" onPress={handleBaselineSubmit} />
       ) : (
         <Button title="Next" onPress={handleNextStep} />
+      )}
+
+      {currentStep > 1 && (
+        <Button title="Previous" onPress={handlePreviousStep} />
       )}
     </ScrollView>
   );
