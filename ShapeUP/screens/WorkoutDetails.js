@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, Image, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Image } from 'react-native';
 import { db } from '../firebase';
 import { doc, getDoc } from 'firebase/firestore';
+import { getStorage, ref, getDownloadURL } from 'firebase/storage';
 
-const WorkoutDetails = ({ route, navigation }) => {
+const WorkoutDetails = ({ route }) => {
     const { workoutId } = route.params;
     const [workoutDetails, setWorkoutDetails] = useState(null);
 
@@ -12,9 +13,16 @@ const WorkoutDetails = ({ route, navigation }) => {
             try {
                 const docRef = doc(db, 'workouts', workoutId);
                 const docSnap = await getDoc(docRef);
-
+        
                 if (docSnap.exists()) {
-                    setWorkoutDetails(docSnap.data());
+                    let data = docSnap.data();
+                    if (data.exercises) {
+                        data = await fetchExerciseImagesForWorkout(data); // Await for images and update data
+                        setWorkoutDetails(data);
+                    } else {
+                        console.log('No exercises field in the document');
+                        setWorkoutDetails(data); // Set data even if exercises are not present
+                    }
                 } else {
                     console.log('No such document!');
                 }
@@ -26,6 +34,31 @@ const WorkoutDetails = ({ route, navigation }) => {
         fetchWorkoutDetails();
     }, [workoutId]);
 
+    const fetchExerciseImagesForWorkout = async (workoutData) => {
+        const storage = getStorage();
+        const exercisesWithImages = await Promise.all(
+            workoutData.exercises.map(async (exerciseName) => {
+                const images = await fetchExerciseImages(exerciseName, storage);
+                return { name: exerciseName, images };
+            })
+        );
+        return {
+            ...workoutData,
+            exercises: exercisesWithImages
+        };
+    };
+
+    const fetchExerciseImages = async (exerciseName, storage) => {
+        const sanitizedExerciseName = exerciseName.replace(/\s+/g, '_').replace(/'/g, '');
+        const imageUrls = await Promise.all(
+            [0, 1].map(async (index) => {
+                const imageRef = ref(storage, `exercise_images/${sanitizedExerciseName}_${index}.jpg`);
+                return getDownloadURL(imageRef).catch(() => null); // Return null if image not found
+            })
+        );
+        return imageUrls.filter(url => url !== null); // Filter out any null URLs
+    };
+
     if (!workoutDetails) {
         return <Text>Loading workout details...</Text>;
     }
@@ -33,33 +66,22 @@ const WorkoutDetails = ({ route, navigation }) => {
     return (
         <ScrollView style={styles.container}>
             <Text style={styles.title}>{workoutDetails.name}</Text>
-            {workoutDetails.exercises && workoutDetails.exercises.map((exercise, index) => (
+            {workoutDetails.exercises.map((exercise, index) => (
                 <View key={index} style={styles.exerciseContainer}>
                     <Text style={styles.exerciseName}>{exercise.name}</Text>
-                    {exercise.images && exercise.images.map((image, imgIndex) => (
+                    {exercise.images.map((image, imgIndex) => (
                         <Image key={imgIndex} source={{ uri: image }} style={styles.exerciseImage} />
                     ))}
                 </View>
             ))}
         </ScrollView>
     );
-}
+};
 
 const styles = StyleSheet.create({
     container: {
         flex: 1,
         padding: 10,
-    },
-    backButton: {
-        padding: 10,
-        marginBottom: 20,
-        backgroundColor: '#e0e0e0',
-        borderRadius: 5,
-    },
-    backButtonText: {
-        textAlign: 'center',
-        color: '#000',
-        fontSize: 16,
     },
     title: {
         fontSize: 20,
