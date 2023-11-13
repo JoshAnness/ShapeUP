@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { View, TextInput, Button, Text, ScrollView, Image, TouchableOpacity, StyleSheet, Platform, StatusBar } from 'react-native';
 import Checkbox from 'expo-checkbox';
 import { db, auth } from '../firebase';
-import { doc, getDoc } from 'firebase/firestore';
+import { doc, getDoc, collection, addDoc } from 'firebase/firestore';
 import { getStorage, ref, getDownloadURL } from 'firebase/storage';
 
 const fetchBaselineTestData = async (userId) => {
@@ -78,11 +78,27 @@ const getExerciseInstructions = (exerciseName) => {
   
 };
 
+const submitWorkoutToFirebase = async (workoutName, workoutExercises) => {
+  try {
+    const docRef = await addDoc(collection(db, "workouts"), {
+      name: workoutName,
+      exercises: workoutExercises,
+      userId: auth.currentUser.uid, // Assuming you want to associate the workout with the current user
+      createdAt: new Date() // Optional: store the creation date of the workout
+    });
+    console.log("Document written with ID: ", docRef.id);
+  } catch (e) {
+    console.error("Error adding document: ", e);
+  }
+};
+
 const ChatScreen = () => {
   const [input, setInput] = useState('');
   const [userBaselineTest, setUserBaselineTest] = useState(null);
   const [workoutPlan, setWorkoutPlan] = useState([]);
   const [selectedExercise, setSelectedExercise] = useState(null);
+  const [workoutName, setWorkoutName] = useState('');
+  const [isSubmitted, setIsSubmitted] = useState(false);
   
   useEffect(() => {
     if (auth.currentUser) {
@@ -120,6 +136,16 @@ const ChatScreen = () => {
     setWorkoutPlan(newWorkoutPlan);
   };
 
+  const handleSubmitWorkout = async () => {
+    const selectedExercises = workoutPlan.filter(exercise => exercise.selected).map(exercise => exercise.name);
+    if (selectedExercises.length === 0 || workoutName.trim() === '') {
+      alert('Please select exercises and provide a name for the workout.');
+      return;
+    }
+    await submitWorkoutToFirebase(workoutName, selectedExercises);
+    setIsSubmitted(true);
+  };
+
   const toggleExerciseSelection = async (exerciseName) => {
     const newWorkoutPlan = await Promise.all(workoutPlan.map(async (exercise) => {
       if (exercise.name === exerciseName) {
@@ -139,6 +165,15 @@ const ChatScreen = () => {
 
   return (
     <View style={styles.container}>
+      <View style={styles.inputContainer}>
+        <TextInput
+          value={workoutName}
+          onChangeText={setWorkoutName}
+          placeholder="Enter Workout Name"
+          style={styles.input}
+        />
+      </View>
+
       <View style={styles.inputContainer}>
         <TextInput
           value={input}
@@ -175,6 +210,16 @@ const ChatScreen = () => {
           </View>
         ))}
       </ScrollView>
+
+      <View style={styles.submitContainer}>
+        <Button
+          title="Submit Workout"
+          onPress={handleSubmitWorkout}
+          color="#007AFF"
+          disabled={isSubmitted}
+        />
+        {isSubmitted && <Text style={styles.submissionStatus}>Workout submitted successfully!</Text>}
+      </View>
     </View>
   );
 };
@@ -242,6 +287,16 @@ const styles = StyleSheet.create({
   },
   exerciseInstructions: {
     marginTop: 8,
+  },
+  submitContainer: {
+    marginTop: 10,
+    marginBottom: 20,
+  },
+  submissionStatus: {
+    marginTop: 10,
+    color: 'green',
+    fontWeight: 'bold',
+    textAlign: 'center',
   },
 });
 

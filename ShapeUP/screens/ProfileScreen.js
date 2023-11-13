@@ -1,12 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, Image, Alert, TextInput, Modal } from 'react-native';
-import { auth } from '../firebase';
-import { getDoc, doc, updateDoc, addDoc, collection, query, where, onSnapshot } from 'firebase/firestore';
-import { db, storage } from '../firebase';
+import { View, Text, StyleSheet, TouchableOpacity, Image, FlatList } from 'react-native';
+import { auth, db, storage } from '../firebase';
+import { getDoc, doc, collection, query, where, onSnapshot } from 'firebase/firestore';
 import * as ImagePicker from 'expo-image-picker';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import SegmentedControl from '@react-native-segmented-control/segmented-control';
-import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
+import { Calendar } from 'react-native-calendars';
 
 const ProfileScreen = ({ navigation }) => {
 
@@ -14,6 +13,8 @@ const ProfileScreen = ({ navigation }) => {
     const [lastName, setLastName] = useState("");
     const [userProfilePic, setUserProfilePic] = useState(null);
     const [username, setUsername] = useState("");
+    const [selectedSegment, setSelectedSegment] = useState(0);
+    const [workouts, setWorkouts] = useState([]);
 
     useEffect(() => {
         const fetchUserData = async () => {
@@ -103,6 +104,31 @@ const ProfileScreen = ({ navigation }) => {
         setSelectedButton(button);
     };
 
+    useEffect(() => {
+        // Fetch workouts from Firestore
+        const workoutRef = collection(db, 'workouts');
+        const q = query(workoutRef, where('userId', '==', auth.currentUser.uid));
+        const unsubscribe = onSnapshot(q, (querySnapshot) => {
+            const fetchedWorkouts = querySnapshot.docs.map(doc => ({
+                id: doc.id,
+                ...doc.data()
+            }));
+            setWorkouts(fetchedWorkouts);
+        });
+
+        return () => unsubscribe();
+    }, []);
+
+    const handleDayPress = (date) => {
+        // Your existing logic for handling calendar day press
+    };
+
+    const renderWorkoutItem = ({ item }) => (
+        <TouchableOpacity style={styles.item} onPress={() => navigation.navigate('WorkoutDetails', { workoutId: item.id })}>
+            <Text style={styles.itemTitle}>{item.name}</Text>
+        </TouchableOpacity>
+    );
+
     return (
         <View style={styles.container}>
             <View style={styles.headerContainer}>
@@ -115,25 +141,30 @@ const ProfileScreen = ({ navigation }) => {
                 <Text style={styles.header}>{firstName && lastName ? `${firstName} ${lastName}` : "User"}</Text>
                 {username && <Text style={styles.username}>@{username}</Text>}
             </View>
-            <TouchableOpacity style={styles.button} onPress={() => navigation.navigate('CalendarIn')}>
-                <Text>Calendar</Text>
+
+            <SegmentedControl
+                values={['Workouts', 'Calendar']}
+                selectedIndex={selectedSegment}
+                onChange={(event) => setSelectedSegment(event.nativeEvent.selectedSegmentIndex)}
+                style={styles.segmentedControl}
+            />
+
+            {selectedSegment === 0 && (
+                <FlatList
+                    data={workouts}
+                    renderItem={renderWorkoutItem}
+                    keyExtractor={(item) => item.id}
+                    style={styles.contentContainer}
+                />
+            )}
+
+            {selectedSegment === 1 && (
+                <Calendar onDayPress={handleDayPress} />
+            )}
+
+            <TouchableOpacity style={styles.aiWorkoutCreationButton} onPress={() => navigation.navigate('Chat')}>
+                <Text style={styles.buttonText}>AI Workout Creation</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={styles.button} onPress={() => navigation.navigate('Chat')}>
-                <Text>Chat with an Expert</Text>
-            </TouchableOpacity>
-            <View style={styles.footerContainer}>
-                <TouchableOpacity style={styles.footerButton} onPress={() => navigation.navigate('Library')}>
-                    <Text>Library</Text>
-                </TouchableOpacity>
- 
-                <TouchableOpacity style={styles.footerButton} onPress={() => navigation.navigate('Tracker')}>
-                    <Text>Tracker</Text>
-                </TouchableOpacity>
-                
-                <TouchableOpacity style={styles.footerButton} onPress={() => {}}>
-                    <Text>Create Plan</Text>
-                </TouchableOpacity>
-                </View>
 
             <TouchableOpacity style={styles.settingsButton} onPress={() => navigation.navigate('Settings')}>
                 <Image 
@@ -283,13 +314,32 @@ const styles = StyleSheet.create({
         color: '#888',
         fontSize: 16
     },    
+    segmentedControl: {
+        width: '90%',
+        marginVertical: 20,
+    },
+    contentContainer: {
+        width: '100%',
+    },
     button: {
         padding: 15,
         margin: 10,
         backgroundColor: '#4CAF50',
         borderRadius: 8,
         alignItems: 'center'
-    }
+    },
+    aiWorkoutCreationButton: {
+        padding: 15,
+        margin: 10,
+        backgroundColor: '#4CAF50',
+        borderRadius: 8,
+        alignItems: 'center',
+        width: '90%'
+    },
+    buttonText: {
+        color: 'white',
+        fontWeight: 'bold'
+    },
 });
 
 export default ProfileScreen;

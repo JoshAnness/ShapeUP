@@ -2,8 +2,6 @@ import React from 'react';
 import { createStackNavigator } from '@react-navigation/stack';
 import { View, Text, TouchableOpacity } from 'react-native';
 import ProfileScreen from '../screens/ProfileScreen';
-import CreateGoalScreen from '../screens/CreateGoalScreen';
-import GoalDetailsScreen from '../screens/GoalDetailsScreen';
 import BaselineTestScreen from '../screens/BaselineTestScreen';
 import LoginScreen from '../screens/LoginScreen';
 import RegisterScreen from '../screens/RegisterScreen';
@@ -17,6 +15,7 @@ import Calendar from '../screens/CalendarInfo';
 import CalendarInfo from '../screens/CalendarInfo';
 import DateDetails from '../screens/DateDetails';
 import ChatGPT from '../screens/ChatGPT';
+import WorkoutDetails from '../screens/WorkoutDetails';
 
 const Stack = createStackNavigator();
 
@@ -68,18 +67,6 @@ const AppNavigator = () => (
     />
 
     <Stack.Screen 
-      name="CreateGoal" 
-      component={CreateGoalScreen} 
-      options={{ title: 'Create New Goal' }}
-    />
-
-    <Stack.Screen 
-      name="GoalDetails" 
-      component={GoalDetailsScreen} 
-      options={{ title: 'Goal Details' }}
-    />
-
-    <Stack.Screen 
           name="Settings" 
           component={SettingsScreen} 
           options={{ title: 'Settings' }}
@@ -114,10 +101,16 @@ const AppNavigator = () => (
       options={{ title: 'Details' }}
     />
 
-  <Stack.Screen 
+    <Stack.Screen 
       name="Chat" 
       component={ChatGPT} 
-      options={{ title: 'Chat With an Expert' }}
+      options={{ title: 'AI Workout Creation' }}
+    />
+
+    <Stack.Screen 
+      name="WorkoutDetails" 
+      component={WorkoutDetails} 
+      options={{ title: 'Workout Details' }}
     />
 
   </Stack.Navigator>
