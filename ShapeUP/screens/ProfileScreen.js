@@ -162,7 +162,7 @@ const ProfileScreen = ({ navigation }) => {
                 <Calendar onDayPress={handleDayPress} />
             )}
 
-            <TouchableOpacity style={styles.aiWorkoutCreationButton} onPress={() => navigation.navigate('Chat')}>
+            <TouchableOpacity style={styles.aiWorkoutCreationButton} onPress={() => navigation.navigate('WorkoutCreation')}>
                 <Text style={styles.buttonText}>AI Workout Creation</Text>
             </TouchableOpacity>
 
