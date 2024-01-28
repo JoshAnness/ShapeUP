@@ -22,6 +22,37 @@ const RegisterScreen = () => {
     }    
 
     const handleSignUp = () => {
+    // Array of disallowed characters
+    const disallowedChars = ['{', '}', '[', ']', '/', '\\', '=', '<', '>', '@'];
+    //Special array for email
+    const disallowedEmailChars = ['{', '}', '[', ']', '/', '\\', '=', '<', '>'];
+
+    // Checking username
+    if (disallowedChars.some(char => username.includes(char))) {
+    alert("Username cannot contain special characters: {} [] / \\ = <> @");
+    return; // Prevent further execution
+}
+// firstName
+if (disallowedChars.some(char => firstName.includes(char))) {
+    alert("Firstnames cannot contain special characters: {} [] / \\ = <> @");
+    return; // Prevent further execution
+}
+// lastName
+if (disallowedChars.some(char => lastName.includes(char))) {
+    alert("Lastnames cannot contain special characters: {} [] / \\ = <> @");
+    return; // Prevent further execution
+}
+// email
+if (disallowedEmailChars.some(char => email.includes(char))) {
+    alert("Emails cannot contain special characters: {} [] / \\ = <>");
+    return; // Prevent further execution
+}
+// password
+if (disallowedChars.some(char => password.includes(char))) {
+    alert("Too secure! Passwords cannot contain special characters: {} [] / \\ = <> @");
+    return; // Prevent further execution
+}
+
         createUserWithEmailAndPassword(auth, email, password)
             .then(userCredentials => {
                 const user = userCredentials.user;
