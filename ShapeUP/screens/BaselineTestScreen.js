@@ -1,102 +1,123 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, StyleSheet, Button, Alert, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, Button, ScrollView, TouchableOpacity } from 'react-native';
 import Checkbox from 'expo-checkbox';
 import { auth, db } from '../firebase';
 import { setDoc, doc } from 'firebase/firestore';
-import { Picker } from '@react-native-picker/picker';
+
+const fitnessLevelMap = {
+  'Beginner': 'beginner',
+  'Intermediate': 'intermediate',
+  'Advanced': 'expert',
+};
 
 const BaselineTestScreen = ({ navigation }) => {
   const [currentStep, setCurrentStep] = useState(1);
-  const [age, setAge] = useState("");
-  const [weight, setWeight] = useState("");
-  const [heightFeet, setHeightFeet] = useState("4");
-  const [heightInches, setHeightInches] = useState("0");
-  const [sex, setSex] = useState("male");
-  const [exerciseTypes, setExerciseTypes] = useState([]);
-  const [fitnessLevel, setFitnessLevel] = useState("");
-  const [equipment, setEquipment] = useState([]);
-  const [exerciseFrequency, setExerciseFrequency] = useState("");
+  const [fitnessLevel, setFitnessLevel] = useState('');
+  const [selectedEquipmentCategory, setSelectedEquipmentCategory] = useState(new Set());
 
   const handleNextStep = () => {
     setCurrentStep(currentStep + 1);
   };
 
-  const handleBaselineSubmit = async () => {
-
-    try {
-      const baselineTestRef = doc(db, 'baselineTests', auth.currentUser.uid);
-      await setDoc(baselineTestRef, {
-        age: parseInt(age),
-        weight: parseInt(weight),
-        heightFeet: heightFeet,
-        heightInches: heightInches,
-        sex: sex,
-        exerciseTypes: exerciseTypes,
-        fitnessLevel: fitnessLevel,
-        equipment: equipment,
-        exerciseFrequency: exerciseFrequency
-      });
-
-      navigation.replace('Profile');
-    } catch (error) {
-      Alert.alert("Error", "There was an issue saving your data. Please try again.");
-      console.error("Error adding baseline test: ", error);
+  const handlePreviousStep = () => {
+    if (currentStep > 1) {
+      setCurrentStep(currentStep - 1);
     }
   };
+
+  const selectFitnessLevel = (level) => {
+    setFitnessLevel(level);
+  };
+
+  const handleEquipmentSelection = (category) => {
+    setSelectedEquipmentCategory(category);
+  };
+
+  const handleBaselineSubmit = async () => {
+    if (auth.currentUser) {
+      const uid = auth.currentUser.uid;
+      const formattedFitnessLevel = fitnessLevelMap[fitnessLevel];
+      const baselineTestData = {
+        fitnessLevel: formattedFitnessLevel,
+        selectedEquipmentCategory: selectedEquipmentCategory,
+      };
+
+      try {
+        const baselineTestRef = doc(db, 'baselineTests', uid);
+        await setDoc(baselineTestRef, baselineTestData, { merge: true });
+        navigation.replace('Profile');
+      } catch (error) {
+        Alert.alert("Error", "There was an issue saving your data. Please try again.");
+        console.error("Error adding baseline test: ", error);
+      }
+    } else {
+      Alert.alert("Error", "You need to be logged in to save your data.");
+    }
+  };
+
+  const renderEquipmentOption = (category, subtext) => (
+    <TouchableOpacity
+      key={category}
+      onPress={() => handleEquipmentSelection(category)}
+      style={styles.optionContainer}
+    >
+      <Checkbox
+        style={styles.checkbox}
+        value={selectedEquipmentCategory === category}
+      />
+      <View style={styles.textContainer}>
+        <Text style={styles.answerText}>{category}</Text>
+        {subtext && <Text style={styles.subtext}>{subtext}</Text>}
+      </View>
+    </TouchableOpacity>
+  );
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
       {currentStep === 1 && (
-        <View style={styles.section}>
-          <Text>What type of exercise do you do?</Text>
-          <Checkbox
-            style={styles.checkbox}
-            value={exerciseTypes.includes('Endurance')}
-            onValueChange={() => {
-              if (exerciseTypes.includes('Endurance')) {
-                setExerciseTypes(exerciseTypes.filter(type => type !== 'Endurance'));
-              } else {
-                setExerciseTypes([...exerciseTypes, 'Endurance']);
-              }
-            }}
-          />
-          <Text>Endurance</Text>
-          {/* Add other checkboxes similarly */}
-        </View>
+        <>
+          <Text style={styles.mainQuestion}>What is your fitness level?</Text>
+          <TouchableOpacity onPress={() => selectFitnessLevel('Beginner')} style={styles.option}>
+            <Checkbox style={styles.checkbox} value={fitnessLevel.includes('Beginner')} />
+            <View style={styles.textContainer}>
+              <Text style={styles.answerText}>Beginner</Text>
+              <Text style={styles.subtext}>I haven't lifted weights or just started</Text>
+            </View>
+          </TouchableOpacity>
+          <TouchableOpacity onPress={() => selectFitnessLevel('Intermediate')} style={styles.option}>
+            <Checkbox style={styles.checkbox} value={fitnessLevel.includes('Intermediate')} />
+            <View style={styles.textContainer}>
+              <Text style={styles.answerText}>Intermediate</Text>
+              <Text style={styles.subtext}>I've done common weighted exercises</Text>
+            </View>
+          </TouchableOpacity>
+          <TouchableOpacity onPress={() => selectFitnessLevel('Advanced')} style={styles.option}>
+            <Checkbox style={styles.checkbox} value={fitnessLevel.includes('Advanced')} />
+            <View style={styles.textContainer}>
+              <Text style={styles.answerText}>Advanced</Text>
+              <Text style={styles.subtext}>I've been lifting weights for a while</Text>
+            </View>
+          </TouchableOpacity>
+        </>
       )}
+
       {currentStep === 2 && (
-        <View>
-          <Text>What is your fitness level?</Text>
-          <Picker selectedValue={fitnessLevel} onValueChange={(itemValue) => setFitnessLevel(itemValue)}>
-            <Picker.Item label="Beginner" value="beginner" />
-            <Picker.Item label="Intermediate" value="intermediate" />
-            <Picker.Item label="Advanced" value="advanced" />
-          </Picker>
-        </View>
-      )}
-      {currentStep === 3 && (
         <View style={styles.section}>
-          <Text>What type of equipment do you have?</Text>
-          <Checkbox
-            style={styles.checkbox}
-            value={equipment.includes('Full gym')}
-            onValueChange={() => {
-              if (equipment.includes('Full gym')) {
-                setEquipment(equipment.filter(equip => equip !== 'Full gym'));
-              } else {
-                setEquipment([...equipment, 'Full gym']);
-              }
-            }}
-          />
-          <Text>Full gym</Text>
-          {/* Add other checkboxes similarly */}
+          <Text style={styles.mainQuestion}>What type of equipment do you have?</Text>
+          {renderEquipmentOption('Body Only')}
+          {renderEquipmentOption('Home Gym', 'Foam Roll, Kettlebells, Dumbbell, Medicine Ball, Bands')}
+          {renderEquipmentOption('Full Gym', 'Machines and other advanced equipment')}
         </View>
       )}
-      {/* Continue adding your questions */}
-      {currentStep < 9 ? (
-        <Button title="Next" onPress={handleNextStep} />
-      ) : (
+
+      {currentStep === 2 ? (
         <Button title="Submit" onPress={handleBaselineSubmit} />
+      ) : (
+        <Button title="Next" onPress={handleNextStep} />
+      )}
+
+      {currentStep > 1 && (
+        <Button title="Previous" onPress={handlePreviousStep} />
       )}
     </ScrollView>
   );
@@ -105,25 +126,43 @@ const BaselineTestScreen = ({ navigation }) => {
 const styles = StyleSheet.create({
   container: {
     padding: '5%',
-    backgroundColor: '#f4f4f8',
     alignItems: 'center',
     justifyContent: 'flex-start',
   },
-  header: {
+  titleBar: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    width: '100%',
     marginBottom: 20,
+    alignItems: 'center',
+  },
+  backArrow: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#000000',  // Red color for the back arrow
+  },
+  title: {
+    fontSize: 18,
+    fontWeight: 'bold',
+  },
+  mainQuestion: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: '#333',
-    textAlign: 'center'
-  },
-  section: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    width: '100%', // added this to make sure they stretch and align properly
-    marginBottom: 10, // added this for some spacing
+    textAlign: 'center',
+    marginBottom: 20,
   },
   checkbox: {
-    margin: 8,
+    marginRight: 10,
+  },
+  textContainer: {
+    flexDirection: 'column',
+    flex: 1, 
+  },
+  section: {
+    flexDirection: 'column',
+    alignItems: 'flex-start', 
+    width: '100%',
+    marginBottom: 10,
   },
   input: {
     width: '95%',
@@ -131,12 +170,12 @@ const styles = StyleSheet.create({
     borderColor: 'gray',
     borderWidth: 1,
     marginBottom: 20,
-    borderRadius: 8
+    borderRadius: 8,
   },
   pickerContainer: {
     width: '95%',
     height: 50,
-    marginBottom: 125
+    marginBottom: 125,
   },
   picker: {
     width: '100%',
@@ -144,6 +183,34 @@ const styles = StyleSheet.create({
   },
   submitButton: {
     marginTop: 10,
+  },
+  answerText: {
+    fontSize: 19,
+  },
+  subtext: {
+    fontSize: 14, 
+    color: '#888',
+  },
+  optionContainer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    width: '100%',
+    marginBottom: 10,
+    paddingVertical: 10,
+    paddingHorizontal: 15,
+    borderBottomWidth: 1,
+    borderColor: '#E5E5E5',
+  },
+  option: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'flex-start',
+    marginBottom: 10,
+    paddingVertical: 10,
+    paddingHorizontal: 15,
+    borderBottomWidth: 1,
+    borderColor: '#E5E5E5',
   },
 });
 

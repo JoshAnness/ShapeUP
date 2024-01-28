@@ -2,8 +2,6 @@ import React from 'react';
 import { createStackNavigator } from '@react-navigation/stack';
 import { View, Text, TouchableOpacity } from 'react-native';
 import ProfileScreen from '../screens/ProfileScreen';
-import CreateGoalScreen from '../screens/CreateGoalScreen';
-import GoalDetailsScreen from '../screens/GoalDetailsScreen';
 import BaselineTestScreen from '../screens/BaselineTestScreen';
 import LoginScreen from '../screens/LoginScreen';
 import RegisterScreen from '../screens/RegisterScreen';
@@ -11,6 +9,13 @@ import { signOut } from 'firebase/auth';
 import { auth } from '../firebase';
 import SettingsScreen from '../screens/SettingsScreen';
 import FeedScreen from '../screens/FeedScreen';
+import WorkoutLibrary from '../screens/WorkoutLibrary';
+import WorkoutTracker from '../screens/WorkoutTracker';
+import Calendar from '../screens/CalendarInfo';
+import CalendarInfo from '../screens/CalendarInfo';
+import DateDetails from '../screens/DateDetails';
+import ChatGPT from '../screens/ChatGPT';
+import WorkoutDetails from '../screens/WorkoutDetails';
 
 const Stack = createStackNavigator();
 
@@ -62,18 +67,6 @@ const AppNavigator = () => (
     />
 
     <Stack.Screen 
-      name="CreateGoal" 
-      component={CreateGoalScreen} 
-      options={{ title: 'Create New Goal' }}
-    />
-
-    <Stack.Screen 
-      name="GoalDetails" 
-      component={GoalDetailsScreen} 
-      options={{ title: 'Goal Details' }}
-    />
-
-    <Stack.Screen 
           name="Settings" 
           component={SettingsScreen} 
           options={{ title: 'Settings' }}
@@ -83,6 +76,41 @@ const AppNavigator = () => (
       name="Feed" 
       component={FeedScreen} 
       options={{ title: 'Feed' }}
+    />
+
+    <Stack.Screen 
+      name="Library" 
+      component={WorkoutLibrary} 
+      options={{ title: 'Library for Workouts' }}
+    /> 
+
+    <Stack.Screen 
+      name="Tracker" 
+      component={WorkoutTracker} 
+      options={{ title: 'Workout Tracker' }}
+    />
+
+    <Stack.Screen 
+      name="CalendarIn" 
+      component={CalendarInfo} 
+      options={{ title: 'Calendar' }}
+    />
+    <Stack.Screen 
+      name="Details" 
+      component={DateDetails} 
+      options={{ title: 'Details' }}
+    />
+
+    <Stack.Screen 
+      name="Chat" 
+      component={ChatGPT} 
+      options={{ title: 'AI Workout Creation' }}
+    />
+
+    <Stack.Screen 
+      name="WorkoutDetails" 
+      component={WorkoutDetails} 
+      options={{ title: 'Workout Details' }}
     />
 
   </Stack.Navigator>
