@@ -1,15 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import {
-  View,
-  Text,
-  TextInput,
-  StyleSheet,
-  ScrollView,
-  Image,
-  Button,
-  Platform,
-  Alert
-} from 'react-native';
+import { View, Text, TextInput, StyleSheet, ScrollView, Image, Button, Platform, Alert, TouchableOpacity} from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { db } from '../firebase';
 import { doc, getDoc, setDoc, updateDoc } from 'firebase/firestore';
@@ -166,9 +156,11 @@ const WorkoutDetails = ({ route }) => {
       <View style={styles.dateContainer}>
         <Text>Date: </Text>
         {Platform.OS === 'ios' ? (
-          <Text style={styles.dateText} onPress={showDatePickerModal}>
-            {selectedDate.toISOString().split('T')[0]}
-          </Text>
+          <TouchableOpacity onPress={showDatePickerModal}>
+            <Text style={styles.dateText}>
+              {selectedDate.toISOString().split('T')[0]}
+            </Text>
+          </TouchableOpacity>
         ) : (
           <DateTimePicker
             value={selectedDate}
@@ -213,16 +205,12 @@ const WorkoutDetails = ({ route }) => {
         </View>
       ))}
 
-      <Button title="Save Data" onPress={saveDataToFirebase} color="#4CAF50" />
-
-      {Platform.OS === 'ios' && showDatePicker && (
-        <DateTimePicker
-          value={selectedDate}
-          mode="date"
-          display="default"
-          onChange={handleDateChange}
-        />
-      )}
+      <TouchableOpacity
+        style={styles.saveButton}
+        onPress={saveDataToFirebase}
+      >
+        <Text style={styles.buttonText}>Save Data</Text>
+      </TouchableOpacity>   
     </ScrollView>
   );
 };
@@ -282,6 +270,18 @@ const styles = StyleSheet.create({
     height: 200,
     resizeMode: 'cover',
     marginBottom: 10,
+  },
+  saveButton: {
+    padding: 15,
+    margin: 10,
+    backgroundColor: '#4CAF50',
+    borderRadius: 8,
+    alignItems: 'center',
+    width: '90%'
+  },
+  buttonText: {
+    color: 'white',
+    fontWeight: 'bold'
   },
 });
 

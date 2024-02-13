@@ -17,7 +17,7 @@ function DateDetails({ route }) {
         // Format the selected date as 'yyyy-MM-dd'
         const formattedDate = format(selectedDateObject, 'yyyy-MM-dd');
 
-        const workoutRef = collection(db, 'workouts');
+        const workoutRef = collection(db, 'workoutDetails');
         const q = query(workoutRef, where('date', '==', formattedDate));
         const querySnapshot = await getDocs(q);
 
@@ -40,12 +40,8 @@ function DateDetails({ route }) {
       <Text style={styles.header}>Workouts for {selectedDate}</Text>
       {workoutData.map((data, index) => (
         <View key={index} style={styles.workoutContainer}>
-          <Text style={styles.workoutItem}>Title: {data.title}</Text>
-          <Text style={styles.workoutItem}>Workout Type: {data.workoutType}</Text>
-          <Text style={styles.workoutItem}>Workout Name: {data.workoutName}</Text>
-          <Text style={styles.workoutItem}>Weight: {data.weight}</Text>
-          <Text style={styles.workoutItem}>Reps: {data.reps}</Text>
-          <Text style={styles.workoutItem}>Notes: {data.notes}</Text>
+          <Text style={styles.workoutItem}>Info: {data.setsRepsData}</Text>
+          <Text style={styles.workoutItem}>Weight: {data.weightData}</Text>
         </View>
       ))}
     </ScrollView>
