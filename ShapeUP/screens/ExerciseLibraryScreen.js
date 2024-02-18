@@ -13,9 +13,8 @@ const ExerciseLibraryScreen = () => {
   const [selectedMuscle, setSelectedMuscle] = useState('All');
   const [selectedLevel, setSelectedLevel] = useState('All');
   const [selectedExercises, setSelectedExercises] = useState(new Set());
-  // Declare selectedExercise state here
   const [selectedExercise, setSelectedExercise] = useState(null);
-  const [exerciseImages, setExerciseImages] = useState([]);
+  const [exerciseImages, setExerciseImages] = useState({});
 
   useEffect(() => {
     const fetchExercises = async () => {
@@ -48,6 +47,8 @@ const ExerciseLibraryScreen = () => {
   };
 
   const fetchExerciseImages = async (exerciseName) => {
+    if (exerciseImages[exerciseName]) return; // Avoid refetching images if already fetched
+
     const sanitizedExerciseName = exerciseName.replace(/\s+/g, '_').replace(/'/g, '').replace(/\//g, '_');
     const storage = getStorage();
     const imageUrls = await Promise.all(
@@ -59,14 +60,9 @@ const ExerciseLibraryScreen = () => {
           return null;
         }
       })
-    );
-    return imageUrls.filter(url => url);
-  };
+    ).then(urls => urls.filter(url => url)); // Filter out nulls
 
-  const handleSelectExercise = async (exerciseName) => {
-    setSelectedExercise(exerciseName);
-    const images = await fetchExerciseImages(exerciseName);
-    setExerciseImages(images);
+    setExerciseImages(prevState => ({ ...prevState, [exerciseName]: imageUrls }));
   };
 
   const toggleSelection = (exerciseName) => {
@@ -77,18 +73,21 @@ const ExerciseLibraryScreen = () => {
       newSelectedExercises.add(exerciseName);
     }
     setSelectedExercises(newSelectedExercises);
+    setSelectedExercise(exerciseName);
+    fetchExerciseImages(exerciseName);
   };
 
   const confirmSelection = () => {
-    // Since we're using a global variable, ensure you've declared it in a global scope or use an alternative approach
-    global.selectedExercisesFromLibrary = Array.from(selectedExercises);
-    navigation.goBack();
+    navigation.navigate('WorkoutCreation', { selectedExercisesFromLibrary: Array.from(selectedExercises) });
   };
 
   const renderExerciseItem = ({ item }) => (
     <TouchableOpacity onPress={() => toggleSelection(item.name)} style={styles.exerciseItem}>
       <Checkbox value={selectedExercises.has(item.name)} onValueChange={() => toggleSelection(item.name)} />
       <Text style={styles.exerciseText}>{item.name}</Text>
+      {selectedExercise === item.name && exerciseImages[item.name]?.map((image, idx) => (
+        <Image key={idx} source={{ uri: image }} style={styles.exerciseImage} resizeMode="contain" />
+      ))}
     </TouchableOpacity>
   );
 
@@ -129,24 +128,10 @@ const ExerciseLibraryScreen = () => {
       </View>
       <FlatList
         data={filteredExercises}
-        renderItem={({ item }) => (
-          <TouchableOpacity style={styles.exerciseItem} onPress={() => handleSelectExercise(item.name)}>
-            <Text style={styles.title}>{item.name}</Text>
-            {selectedExercise === item.name && exerciseImages.map((image, idx) => (
-              <Image key={idx} source={{ uri: image }} style={styles.exerciseImage} resizeMode="contain" />
-            ))}
-          </TouchableOpacity>
-        )}
         keyExtractor={(item, index) => `${item.name}-${index}`}
+        renderItem={renderExerciseItem}
       />
-       <View style={styles.container}>
-            <FlatList
-                data={filteredExercises}
-                keyExtractor={(item, index) => `${item.name}-${index}`}
-                renderItem={renderExerciseItem}
-            />
-            <Button title="Confirm Selection" onPress={confirmSelection} />
-        </View>
+      <Button title="Confirm Selection" onPress={confirmSelection} />
     </View>
   );
 };
@@ -174,19 +159,18 @@ const styles = StyleSheet.create({
     marginHorizontal: 6,
   },
   exerciseItem: {
-    marginBottom: 20,
+    flexDirection: 'row',
     alignItems: 'center',
+    marginBottom: 20,
   },
-  title: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    marginBottom: 8,
+  exerciseText: {
+    marginLeft: 8,
   },
   exerciseImage: {
-    width: 200,
-    height: 200,
-    borderRadius: 10,
-    marginTop: 8,
+    width: 100,
+    height: 100,
+    borderRadius: 5,
+    marginVertical: 8,
   },
 });
 

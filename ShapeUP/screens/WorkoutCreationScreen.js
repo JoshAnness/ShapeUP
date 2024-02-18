@@ -231,24 +231,8 @@ const ChatScreen = () => {
   };
 
   const navigateToExerciseLibrary = () => {
-    navigation.navigate('ExerciseLibrary', {
-      addExercisesFromLibrary: (selectedExercisesFromLibrary) => {
-        addExercisesToWorkoutPlan(selectedExercisesFromLibrary);
-      }
-    });
+    navigation.navigate('ExerciseLibrary');
   };
-
-  const addExercisesToWorkoutPlan = (selectedExercisesFromLibrary) => {
-    const newExercises = selectedExercisesFromLibrary.filter(exerciseName => !workoutPlan.find(ex => ex.name === exerciseName)).map(exerciseName => ({
-      name: exerciseName,
-      selected: false,
-      expanded: false,
-      images: [],
-      instructions: ''
-    }));
-    setWorkoutPlan([...workoutPlan, ...newExercises]);
-  };
-  
 
   const muscleGroups = ['Abdominals', 'Abductors', 'Adductors', 'Biceps', 'Calves', 'Chest', 'Forearms', 'Glutes', 'Hamstrings', 'Lats', 'Lower back', 'Middle back', 'Neck', 'Quadriceps', 'Shoulders', 'Traps', 'Triceps'];
 
