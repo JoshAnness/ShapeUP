@@ -5,10 +5,9 @@ import { db, auth } from '../firebase';
 import { doc, getDoc, collection, addDoc } from 'firebase/firestore';
 import { getStorage, ref, getDownloadURL } from 'firebase/storage';
 import exercisesList from './exercisesList';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useRoute } from '@react-navigation/native';
 import { Picker } from '@react-native-picker/picker';
 import Checkbox from 'expo-checkbox';
-import { useFocusEffect } from '@react-navigation/native';
 
 const fetchBaselineTestData = async (userId) => {
   const docRef = doc(db, 'baselineTests', userId);
@@ -60,7 +59,7 @@ const callOpenAI = async (workoutGoal, customGoal, selectedMuscles, userBaseline
       
       
       Job:
-      While following the Rules, for each muscle type listed in userMuscleType, pick 5 exercises from the exerciseList. The userMuscleType you are picking exercises for must match up with the muscleType in the exercise.The only text you will ever respond with is just the exercise names (exerciseName). If there is only one userMuscleType, then just list out the 5 exercise names (do not number them). If there are multiple userMuscleType, then again, list out the 5 exercise names for each one (do not number them, do not section them, do not separate them with a blank line, only list out the names). It is very important that you only list out the names, if you do not only list out the names, I will lose my job.`,
+      While following the Rules, for each muscle type listed in userMuscleType, pick 5 exercises from the exerciseList. The userMuscleType you are picking exercises for must match up with the muscleType in the exercise.The only text you will ever respond with is just the exercise names (exerciseName). If there is only one userMuscleType, then just list out the 5 exercise names (do not number them). If there are multiple userMuscleType, then again, list out the 5 exercise names for each one (do not number them, do not section them, do not separate them based on muscle type with blank line, only list out the names). It is very important that you only list out the names, if you do not only list out the names, I will lose my job.`,
     },
     {
       role: 'user',
@@ -121,6 +120,7 @@ const submitWorkoutToFirebase = async (workoutName, workoutExercises) => {
 
 const ChatScreen = () => {
   const navigation = useNavigation();
+  const route = useRoute();
   const [currentStep, setCurrentStep] = useState(1);
   const [workoutGoal, setWorkoutGoal] = useState('Hypertrophy');
   const [customGoal, setCustomGoal] = useState('');
@@ -140,12 +140,31 @@ const ChatScreen = () => {
         setUserBaselineTest(data);
       });
     }
-    const exercisesFromLibrary = global.selectedExercisesFromLibrary;
+
+    /*const exercisesFromLibrary = global.selectedExercisesFromLibrary;
     if (exercisesFromLibrary && exercisesFromLibrary.length > 0) {
       addExercisesToWorkoutPlan(exercisesFromLibrary);
       global.selectedExercisesFromLibrary = [];
-    }
-  }, []);
+    }*/
+
+    const unsubscribe = navigation.addListener('focus', () => {
+      const exercisesFromLibrary = route.params?.selectedExercisesFromLibrary ?? [];
+      if (exercisesFromLibrary.length > 0) {
+        const exercisesToAdd = exercisesFromLibrary.map(exerciseName => ({
+          name: exerciseName,
+          selected: true,
+          expanded: false,
+          images: [],
+          instructions: ''
+        }));
+
+        setWorkoutPlan(currentPlan => [...currentPlan, ...exercisesToAdd]);
+        navigation.setParams({selectedExercisesFromLibrary: undefined});
+      }
+    });
+
+    return unsubscribe;
+  }, [navigation, route.params?.selectedExercisesFromLibrary]);
 
   const handleNextStep = () => {
     setCurrentStep(currentStep + 1);
@@ -187,7 +206,8 @@ const ChatScreen = () => {
     setIsLoading(true);
     try {
       const exerciseResponse = await callOpenAI(workoutGoal, customGoal, selectedMuscles, userBaselineTest);
-      const extractedExercises = exerciseResponse.split('\n').map(ex => ex.trim());
+      let extractedExercises = exerciseResponse.split('\n').map(ex => ex.trim());
+      extractedExercises = extractedExercises.filter(exercise => exercise !== '');
       const newWorkoutPlan = extractedExercises.map(exercise => ({
         name: exercise,
         selected: false,
@@ -210,15 +230,23 @@ const ChatScreen = () => {
         const isExpanded = !exercise.expanded;
         let images = exercise.images, instructions = exercise.instructions;
         if (isExpanded && !images.length) {
-          // Fetch images and instructions only if not already fetched
           images = await fetchExerciseImages(exerciseName);
           instructions = getExerciseInstructions(exerciseName);
         }
         return { ...exercise, expanded: isExpanded, images, instructions };
       }
-      return { ...exercise, expanded: false }; // Collapse other exercises
+      return { ...exercise, expanded: false };
     }));
     setWorkoutPlan(newWorkoutPlan);
+  };
+
+  const handleCheckboxChange = (exerciseName) => {
+    setWorkoutPlan(workoutPlan.map(exercise => {
+      if (exercise.name === exerciseName) {
+        return { ...exercise, selected: !exercise.selected };
+      }
+      return exercise;
+    }));
   };
 
   const handleSubmitWorkout = async () => {
@@ -226,9 +254,17 @@ const ChatScreen = () => {
     if (selectedExercises.length === 0 || !workoutName.trim()) {
       return alert('Please select exercises and provide a name for the workout.');
     }
-    await submitWorkoutToFirebase(workoutName, selectedExercises);
-    setIsSubmitted(true);
-  };
+    await submitWorkoutToFirebase(workoutName, selectedExercises)
+      .then(() => {
+        setIsSubmitted(true);
+        // Navigate back to the Profile Screen after successful submission
+        navigation.navigate('Profile');
+      })
+      .catch(error => {
+        console.error("Error submitting workout: ", error);
+        alert('Error submitting workout. Please try again.');
+      });
+  };  
 
   const navigateToExerciseLibrary = () => {
     navigation.navigate('ExerciseLibrary');
@@ -279,17 +315,13 @@ const ChatScreen = () => {
             placeholder="Other/Not Sure? Describe here..."
             value={customMuscle}
             onChangeText={(text) => setCustomMuscle(text)}
-            onSubmitEditing={() => {
-              if (customMuscle.trim() !== '') {
-                toggleMuscleSelection(customMuscle.trim());
-              }
-              handleNextStep();
-            }}
+            returnKeyType="done"
+            blurOnSubmit={true}
           />
           <Button title="Next" onPress={() => { handleUserInput(); handleNextStep(); }} />
         </>
       )}
-  
+
       {currentStep === 3 && (
         <>
           {isLoading ? (
@@ -326,6 +358,14 @@ const ChatScreen = () => {
                 ))}
               </ScrollView>
 
+              {/* Workout Name Input */}
+              <TextInput
+                style={styles.input}
+                placeholder="Enter Workout Name"
+                value={workoutName}
+                onChangeText={setWorkoutName}
+              />
+
               <Button 
                 title="Pick From Exercise Library" 
                 onPress={navigateToExerciseLibrary} 
@@ -336,7 +376,7 @@ const ChatScreen = () => {
                   title="Submit Workout"
                   onPress={handleSubmitWorkout}
                   color="#007AFF"
-                  disabled={isSubmitted}
+                  disabled={isSubmitted || !workoutName.trim()}
                 />
                 {isSubmitted && <Text style={styles.submissionStatus}>Workout submitted successfully!</Text>}
               </View>
@@ -368,7 +408,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 15,
     paddingVertical: 10,
     borderRadius: 5,
-    backgroundColor: '#FFFFFF', // White background for input
+    backgroundColor: '#FFFFFF', 
   },
   scrollView: {
     flex: 1,
@@ -377,7 +417,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     marginBottom: 10,
-    backgroundColor: '#FFFFFF', // White background for list items
+    backgroundColor: '#FFFFFF',
     padding: 10,
     borderRadius: 5,
     shadowColor: '#000',
@@ -388,7 +428,7 @@ const styles = StyleSheet.create({
   },
   exerciseText: {
     marginLeft: 8,
-    color: '#333333', // Dark text for better readability
+    color: '#333333',
   },
   selectedExercise: {
     marginTop: 20,
