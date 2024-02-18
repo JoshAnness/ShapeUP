@@ -1,14 +1,19 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TextInput, TouchableOpacity, FlatList, Image } from 'react-native';
+import { View, Text, FlatList, TouchableOpacity, StyleSheet, Button, TextInput, Image } from 'react-native';
 import { getStorage, ref, getDownloadURL } from 'firebase/storage';
 import { Picker } from '@react-native-picker/picker';
+import Checkbox from 'expo-checkbox';
+import { useNavigation } from '@react-navigation/native';
 
 const ExerciseLibraryScreen = () => {
+  const navigation = useNavigation();
   const [exercises, setExercises] = useState([]);
   const [filteredExercises, setFilteredExercises] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedMuscle, setSelectedMuscle] = useState('All');
   const [selectedLevel, setSelectedLevel] = useState('All');
+  const [selectedExercises, setSelectedExercises] = useState(new Set());
+  // Declare selectedExercise state here
   const [selectedExercise, setSelectedExercise] = useState(null);
   const [exerciseImages, setExerciseImages] = useState([]);
 
@@ -16,11 +21,15 @@ const ExerciseLibraryScreen = () => {
     const fetchExercises = async () => {
       const storage = getStorage();
       const exercisesRef = ref(storage, 'exercises.json');
-      const url = await getDownloadURL(exercisesRef);
-      const response = await fetch(url);
-      const data = await response.json();
-      setExercises(data.exercises);
-      setFilteredExercises(data.exercises);
+      try {
+        const url = await getDownloadURL(exercisesRef);
+        const response = await fetch(url);
+        const data = await response.json();
+        setExercises(data.exercises);
+        setFilteredExercises(data.exercises);
+      } catch (error) {
+        console.error("Error fetching exercises:", error);
+      }
     };
     fetchExercises();
   }, []);
@@ -55,15 +64,33 @@ const ExerciseLibraryScreen = () => {
   };
 
   const handleSelectExercise = async (exerciseName) => {
-    if (selectedExercise === exerciseName) {
-      setSelectedExercise(null);
-      setExerciseImages([]);
-    } else {
-      setSelectedExercise(exerciseName);
-      const images = await fetchExerciseImages(exerciseName);
-      setExerciseImages(images);
-    }
+    setSelectedExercise(exerciseName);
+    const images = await fetchExerciseImages(exerciseName);
+    setExerciseImages(images);
   };
+
+  const toggleSelection = (exerciseName) => {
+    const newSelectedExercises = new Set(selectedExercises);
+    if (newSelectedExercises.has(exerciseName)) {
+      newSelectedExercises.delete(exerciseName);
+    } else {
+      newSelectedExercises.add(exerciseName);
+    }
+    setSelectedExercises(newSelectedExercises);
+  };
+
+  const confirmSelection = () => {
+    // Since we're using a global variable, ensure you've declared it in a global scope or use an alternative approach
+    global.selectedExercisesFromLibrary = Array.from(selectedExercises);
+    navigation.goBack();
+  };
+
+  const renderExerciseItem = ({ item }) => (
+    <TouchableOpacity onPress={() => toggleSelection(item.name)} style={styles.exerciseItem}>
+      <Checkbox value={selectedExercises.has(item.name)} onValueChange={() => toggleSelection(item.name)} />
+      <Text style={styles.exerciseText}>{item.name}</Text>
+    </TouchableOpacity>
+  );
 
   const capitalizeFirstLetter = string => string.charAt(0).toUpperCase() + string.slice(1);
 
@@ -112,6 +139,14 @@ const ExerciseLibraryScreen = () => {
         )}
         keyExtractor={(item, index) => `${item.name}-${index}`}
       />
+       <View style={styles.container}>
+            <FlatList
+                data={filteredExercises}
+                keyExtractor={(item, index) => `${item.name}-${index}`}
+                renderItem={renderExerciseItem}
+            />
+            <Button title="Confirm Selection" onPress={confirmSelection} />
+        </View>
     </View>
   );
 };

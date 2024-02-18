@@ -1,6 +1,6 @@
 import axios from 'axios';
 import React, { useState, useEffect } from 'react';
-import { View, TextInput, Button, Text, ScrollView, Image, TouchableOpacity, StyleSheet, Platform, StatusBar } from 'react-native';
+import { View, TextInput, Button, Text, ScrollView, Image, TouchableOpacity, StyleSheet, Platform, StatusBar, ActivityIndicator } from 'react-native';
 import { db, auth } from '../firebase';
 import { doc, getDoc, collection, addDoc } from 'firebase/firestore';
 import { getStorage, ref, getDownloadURL } from 'firebase/storage';
@@ -8,6 +8,7 @@ import exercisesList from './exercisesList';
 import { useNavigation } from '@react-navigation/native';
 import { Picker } from '@react-native-picker/picker';
 import Checkbox from 'expo-checkbox';
+import { useFocusEffect } from '@react-navigation/native';
 
 const fetchBaselineTestData = async (userId) => {
   const docRef = doc(db, 'baselineTests', userId);
@@ -131,12 +132,18 @@ const ChatScreen = () => {
   const [selectedExercise, setSelectedExercise] = useState(null);
   const [workoutName, setWorkoutName] = useState('');
   const [isSubmitted, setIsSubmitted] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   
   useEffect(() => {
     if (auth.currentUser) {
       fetchBaselineTestData(auth.currentUser.uid).then((data) => {
         setUserBaselineTest(data);
       });
+    }
+    const exercisesFromLibrary = global.selectedExercisesFromLibrary;
+    if (exercisesFromLibrary && exercisesFromLibrary.length > 0) {
+      addExercisesToWorkoutPlan(exercisesFromLibrary);
+      global.selectedExercisesFromLibrary = [];
     }
   }, []);
 
@@ -148,6 +155,10 @@ const ChatScreen = () => {
     if (currentStep > 1) {
       setCurrentStep(currentStep - 1);
     }
+  };
+
+  const navigateToFinalStep = () => {
+    setCurrentStep(3);
   };
 
   const handleGoalSelection = (itemValue, itemIndex) => {
@@ -173,16 +184,23 @@ const ChatScreen = () => {
       console.log('Baseline test data not available.');
       return;
     }
-    const exerciseResponse = await callOpenAI(workoutGoal, customGoal, selectedMuscles, userBaselineTest);
-    const extractedExercises = exerciseResponse.split('\n').map(ex => ex.trim());
-    const newWorkoutPlan = extractedExercises.map(exercise => ({
-      name: exercise,
-      selected: false,
-      expanded: false,
-      images: [], 
-      instructions: '' 
-    }));
-    setWorkoutPlan(newWorkoutPlan);
+    setIsLoading(true);
+    try {
+      const exerciseResponse = await callOpenAI(workoutGoal, customGoal, selectedMuscles, userBaselineTest);
+      const extractedExercises = exerciseResponse.split('\n').map(ex => ex.trim());
+      const newWorkoutPlan = extractedExercises.map(exercise => ({
+        name: exercise,
+        selected: false,
+        expanded: false,
+        images: [],
+        instructions: ''
+      }));
+      setWorkoutPlan(newWorkoutPlan);
+    } catch (error) {
+      console.error("Failed to fetch exercises:", error);
+    } finally {
+      setIsLoading(false); 
+    }
     setInput('');
   };
 
@@ -212,6 +230,26 @@ const ChatScreen = () => {
     setIsSubmitted(true);
   };
 
+  const navigateToExerciseLibrary = () => {
+    navigation.navigate('ExerciseLibrary', {
+      addExercisesFromLibrary: (selectedExercisesFromLibrary) => {
+        addExercisesToWorkoutPlan(selectedExercisesFromLibrary);
+      }
+    });
+  };
+
+  const addExercisesToWorkoutPlan = (selectedExercisesFromLibrary) => {
+    const newExercises = selectedExercisesFromLibrary.filter(exerciseName => !workoutPlan.find(ex => ex.name === exerciseName)).map(exerciseName => ({
+      name: exerciseName,
+      selected: false,
+      expanded: false,
+      images: [],
+      instructions: ''
+    }));
+    setWorkoutPlan([...workoutPlan, ...newExercises]);
+  };
+  
+
   const muscleGroups = ['Abdominals', 'Abductors', 'Adductors', 'Biceps', 'Calves', 'Chest', 'Forearms', 'Glutes', 'Hamstrings', 'Lats', 'Lower back', 'Middle back', 'Neck', 'Quadriceps', 'Shoulders', 'Traps', 'Triceps'];
 
   return (
@@ -236,6 +274,7 @@ const ChatScreen = () => {
             />
           )}
           <Button title="Next" onPress={handleNextStep} />
+          <Button title="Create Custom Workout" onPress={navigateToFinalStep} />
         </>
       )}
   
@@ -269,42 +308,56 @@ const ChatScreen = () => {
   
       {currentStep === 3 && (
         <>
-          <ScrollView style={styles.scrollView}>
-            {workoutPlan.map((exercise, index) => (
-              <View key={index}>
-                <View style={styles.exerciseItem}>
-                  <Checkbox
-                    value={exercise.selected}
-                    onValueChange={() => handleCheckboxChange(exercise.name)}
-                    color={exercise.selected ? "#007AFF" : undefined}
-                  />
-                  <TouchableOpacity onPress={() => toggleExerciseSelection(exercise.name)}>
-                    <Text style={styles.exerciseText}>{exercise.name}</Text>
-                  </TouchableOpacity>
-                </View>
-                {exercise.expanded && (
-                  <View style={styles.selectedExercise}>
-                    <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-                      {exercise.images.map((image, imgIndex) => (
-                        <Image key={imgIndex} source={{ uri: image }} style={styles.exerciseImage} />
-                      ))}
-                    </ScrollView>
-                    <Text style={styles.exerciseInstructions}>{exercise.instructions}</Text>
+          {isLoading ? (
+            <View style={styles.loadingContainer}>
+              <ActivityIndicator size="large" color="#0000ff" />
+              <Text>Loading exercises...</Text>
+            </View>
+          ) : (
+            <>
+              <ScrollView style={styles.scrollView}>
+                {workoutPlan.map((exercise, index) => (
+                  <View key={index}>
+                    <View style={styles.exerciseItem}>
+                      <Checkbox
+                        value={exercise.selected}
+                        onValueChange={() => handleCheckboxChange(exercise.name)}
+                        color={exercise.selected ? "#007AFF" : undefined}
+                      />
+                      <TouchableOpacity onPress={() => toggleExerciseSelection(exercise.name)}>
+                        <Text style={styles.exerciseText}>{exercise.name}</Text>
+                      </TouchableOpacity>
+                    </View>
+                    {exercise.expanded && (
+                      <View style={styles.selectedExercise}>
+                        <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                          {exercise.images.map((image, imgIndex) => (
+                            <Image key={imgIndex} source={{ uri: image }} style={styles.exerciseImage} />
+                          ))}
+                        </ScrollView>
+                        <Text style={styles.exerciseInstructions}>{exercise.instructions}</Text>
+                      </View>
+                    )}
                   </View>
-                )}
-              </View>
-            ))}
-          </ScrollView>
+                ))}
+              </ScrollView>
 
-          <View style={styles.submitContainer}>
-            <Button
-              title="Submit Workout"
-              onPress={handleSubmitWorkout}
-              color="#007AFF"
-              disabled={isSubmitted}
-            />
-            {isSubmitted && <Text style={styles.submissionStatus}>Workout submitted successfully!</Text>}
-          </View>
+              <Button 
+                title="Pick From Exercise Library" 
+                onPress={navigateToExerciseLibrary} 
+              />
+
+              <View style={styles.submitContainer}>
+                <Button
+                  title="Submit Workout"
+                  onPress={handleSubmitWorkout}
+                  color="#007AFF"
+                  disabled={isSubmitted}
+                />
+                {isSubmitted && <Text style={styles.submissionStatus}>Workout submitted successfully!</Text>}
+              </View>
+            </>
+          )}
         </>
       )}
   
@@ -372,7 +425,7 @@ const styles = StyleSheet.create({
     width: 100,
     height: 100,
     marginRight: 8,
-    borderRadius: 5, // Rounded corners for images
+    borderRadius: 5,
   },
   exerciseInstructions: {
     marginTop: 8,
@@ -397,6 +450,12 @@ const styles = StyleSheet.create({
   },
   label: {
     marginLeft: 8,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20
   },
 });
 
