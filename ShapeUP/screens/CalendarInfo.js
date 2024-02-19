@@ -1,12 +1,13 @@
 import React from 'react';
 import { View } from 'react-native';
 import { Calendar } from 'react-native-calendars';
+import { Timestamp } from 'firebase/firestore';
 
 function CalendarInfo({ navigation }) {
   const handleDayPress = (date) => {
-    // Ensure the selected date is correctly extracted and displayed
-    const selectedDate = date.dateString;
-    navigation.navigate('Details', { selectedDate });
+    const selectedDateTimestamp = Timestamp.fromDate(new Date(date.dateString));
+    console.log('Selected date timestamp:', selectedDateTimestamp); // Log selected date timestamp for debugging
+    navigation.navigate('DateDetails', { selectedDate: selectedDateTimestamp });
   };
 
   return (

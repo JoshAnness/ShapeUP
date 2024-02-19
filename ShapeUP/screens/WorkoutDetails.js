@@ -90,30 +90,33 @@ const WorkoutDetails = ({ route }) => {
 
   const saveDataToFirebase = async () => {
     try {
-      const workoutDetailsRef = doc(db, 'workoutDetails', workoutId);
-      const workoutDetailsDoc = await getDoc(workoutDetailsRef);
+        const workoutDetailsRef = doc(db, 'workoutDetails', workoutId);
+        const workoutDetailsDoc = await getDoc(workoutDetailsRef);
+        const formattedDate = selectedDate.toISOString().split('T')[0]; // Format the selected date
 
-      if (workoutDetailsDoc.exists()) {
-        await updateDoc(workoutDetailsRef, {
-          [selectedDate.toISOString().split('T')[0]]: {
-            setsRepsData,
-            weightData,
-          },
-        });
-      } else {
-        await setDoc(workoutDetailsRef, {
-          [selectedDate.toISOString().split('T')[0]]: {
-            setsRepsData,
-            weightData,
-          },
-        });
-      }
+        if (workoutDetailsDoc.exists()) {
+            await updateDoc(workoutDetailsRef, 
+                  { // Include date as part of the data
+                    setsRepsData,
+                    weightData,
+                    date: selectedDate.toISOString(), // Store the date
+                },
+            );
+        } else {
+            await setDoc(workoutDetailsRef, 
+                { // Include date as part of the data
+                    setsRepsData,
+                    weightData,
+                    date: selectedDate.toISOString(), // Store the date
+                },
+            );
+        }
 
-      Alert.alert('Workout Saved', '', [{ text: 'OK', onPress: clearInputs }]);
+        Alert.alert('Workout Saved', '', [{ text: 'OK', onPress: clearInputs }]);
     } catch (error) {
-      console.error('Error saving data:', error);
+        console.error('Error saving data:', error);
     }
-  };
+};
 
   const clearInputs = () => {
     setSetsRepsData({});
@@ -152,24 +155,6 @@ const WorkoutDetails = ({ route }) => {
   return (
     <ScrollView style={styles.container}>
       <Text style={styles.title}>{workoutDetails.name}</Text>
-
-      <View style={styles.dateContainer}>
-        <Text>Date: </Text>
-        {Platform.OS === 'ios' ? (
-          <TouchableOpacity onPress={showDatePickerModal}>
-            <Text style={styles.dateText}>
-              {selectedDate.toISOString().split('T')[0]}
-            </Text>
-          </TouchableOpacity>
-        ) : (
-          <DateTimePicker
-            value={selectedDate}
-            mode="date"
-            display="default"
-            onChange={handleDateChange}
-          />
-        )}
-      </View>
 
       {workoutDetails.exercises.map((exercise, index) => (
         <View key={index} style={styles.exerciseContainer}>

@@ -1,71 +1,96 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, ScrollView } from 'react-native';
-import { db } from '../firebase'; // Import the Firebase configuration
+import { db } from '../firebase';
 import { query, where, getDocs, collection } from 'firebase/firestore';
-import { format, toDate } from 'date-fns'; // Import date-fns library
 
-function DateDetails({ route }) {
-  const { selectedDate } = route.params;
-  const [workoutData, setWorkoutData] = useState([]);
+const DateDetails = ({ route }) => {
+    const { selectedDate } = route.params;
+    const [workoutData, setWorkoutData] = useState([]);
 
-  useEffect(() => {
-    const fetchWorkoutData = async () => {
-      try {
-        // Convert the selectedDate to a JavaScript Date object
-        const selectedDateObject = toDate(new Date(selectedDate));
+    useEffect(() => {
+        const fetchWorkoutData = async () => {
+            try {
+                const workoutRef = collection(db, 'workoutDetails');
+                const q = query(workoutRef, where('date', '==', selectedDate));
+                const querySnapshot = await getDocs(q);
 
-        // Format the selected date as 'yyyy-MM-dd'
-        const formattedDate = format(selectedDateObject, 'yyyy-MM-dd');
+                const data = [];
+                querySnapshot.forEach((doc) => {
+                    data.push(doc.data());
+                });
 
-        const workoutRef = collection(db, 'workoutDetails');
-        const q = query(workoutRef, where('date', '==', formattedDate));
-        const querySnapshot = await getDocs(q);
+                console.log('Fetched workout data:', data);
 
-        const data = [];
-        querySnapshot.forEach((doc) => {
-          data.push(doc.data());
-        });
+                setWorkoutData(data);
+            } catch (error) {
+                console.error('Error fetching workout data: ', error);
+            }
+        };
 
-        setWorkoutData(data);
-      } catch (error) {
-        console.error('Error fetching workout data: ', error);
-      }
-    };
+        fetchWorkoutData();
+    }, [selectedDate]);
 
-    fetchWorkoutData();
-  }, [selectedDate]);
-
-  return (
-    <ScrollView contentContainerStyle={styles.container}>
-      <Text style={styles.header}>Workouts for {selectedDate}</Text>
-      {workoutData.map((data, index) => (
-        <View key={index} style={styles.workoutContainer}>
-          <Text style={styles.workoutItem}>Info: {data.setsRepsData}</Text>
-          <Text style={styles.workoutItem}>Weight: {data.weightData}</Text>
-        </View>
-      ))}
-    </ScrollView>
-  );
-}
+    return (
+        <ScrollView contentContainerStyle={styles.container}>
+            <Text style={styles.header}>Workouts for {selectedDate}</Text>
+            {workoutData.length > 0 ? (
+                workoutData.map((workout, index) => (
+                    <View key={index} style={styles.workoutContainer}>
+                        <Text style={styles.workoutName}>{workout.name}</Text>
+                        <Text style={styles.workoutSetsReps}>Sets and Reps:</Text>
+                        {Object.entries(workout.setsRepsData).map(([exerciseName, exerciseData]) => (
+                            <View key={exerciseName} style={styles.exerciseContainer}>
+                                <Text>{exerciseName}</Text>
+                                <Text>Sets: {exerciseData.sets}</Text>
+                                <Text>Reps: {exerciseData.reps}</Text>
+                            </View>
+                        ))}
+                        <Text style={styles.workoutWeight}>Weight:</Text>
+                        {Object.entries(workout.weightData).map(([exerciseName, weight]) => (
+                            <View key={exerciseName} style={styles.exerciseContainer}>
+                                <Text>{exerciseName}</Text>
+                                <Text>Weight: {weight}</Text>
+                            </View>
+                        ))}
+                    </View>
+                ))
+            ) : (
+                <Text>No workouts found for this date</Text>
+            )}
+        </ScrollView>
+    );
+};
 
 const styles = {
-  container: {
-    padding: 20,
-  },
-  header: {
-    fontSize: 24,
-    marginBottom: 20,
-  },
-  workoutContainer: {
-    marginBottom: 20,
-    backgroundColor: '#f0f0f0',
-    padding: 10,
-    borderRadius: 5,
-  },
-  workoutItem: {
-    fontSize: 16,
-    marginBottom: 5,
-  },
+    container: {
+        padding: 20,
+    },
+    header: {
+        fontSize: 24,
+        marginBottom: 20,
+    },
+    workoutContainer: {
+        marginBottom: 20,
+    },
+    workoutName: {
+        fontSize: 20,
+        fontWeight: 'bold',
+        marginBottom: 10,
+    },
+    workoutSetsReps: {
+        fontSize: 16,
+        fontWeight: 'bold',
+        marginBottom: 5,
+    },
+    workoutWeight: {
+        fontSize: 16,
+        fontWeight: 'bold',
+        marginTop: 10,
+        marginBottom: 5,
+    },
+    exerciseContainer: {
+        marginBottom: 10,
+    },
 };
 
 export default DateDetails;

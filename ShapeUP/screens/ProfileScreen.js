@@ -6,6 +6,8 @@ import * as ImagePicker from 'expo-image-picker';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import SegmentedControl from '@react-native-segmented-control/segmented-control';
 import { Calendar } from 'react-native-calendars';
+import { Timestamp } from 'firebase/firestore';
+import { format } from 'date-fns';
 
 const ProfileScreen = ({ navigation }) => {
 
@@ -120,7 +122,9 @@ const ProfileScreen = ({ navigation }) => {
     }, []);
 
     const handleDayPress = (date) => {
-        // Your existing logic for handling calendar day press
+        const selectedDateString = format(new Date(date.timestamp), 'yyyy-MM-dd'); // Format the selected date
+        console.log('Selected date:', selectedDateString); // Log selected date for debugging
+        navigation.navigate('Details', { selectedDate: selectedDateString });
     };
 
     const renderWorkoutItem = ({ item }) => (
@@ -159,7 +163,9 @@ const ProfileScreen = ({ navigation }) => {
             )}
 
             {selectedSegment === 1 && (
-                <Calendar onDayPress={handleDayPress} />
+                <>
+                    <Calendar onDayPress={(day) => handleDayPress(day)} />
+                </>
             )}
 
             <TouchableOpacity style={styles.aiWorkoutCreationButton} onPress={() => navigation.navigate('Chat')}>
