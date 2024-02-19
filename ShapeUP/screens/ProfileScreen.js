@@ -119,8 +119,10 @@ const ProfileScreen = ({ navigation }) => {
         return () => unsubscribe();
     }, []);
 
-    const handleDayPress = (date) => {
-        // Your existing logic for handling calendar day press
+    const handleDayPress = (day) => {
+        const selectedDate = day.dateString; // Assumes date is in YYYY-MM-DD format
+    
+        navigation.navigate('Details', { selectedDate });
     };
 
     const renderWorkoutItem = ({ item }) => (

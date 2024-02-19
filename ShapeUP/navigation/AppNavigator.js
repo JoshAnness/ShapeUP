@@ -15,6 +15,7 @@ import DateDetails from '../screens/DateDetails';
 import ChatScreen from '../screens/WorkoutCreationScreen';
 import WorkoutDetails from '../screens/WorkoutDetails';
 import ExerciseLibraryScreen from '../screens/ExerciseLibraryScreen';
+import WorkoutExecutionScreen from '../screens/WorkoutExecutionScreen';
 
 const Stack = createStackNavigator();
 
@@ -107,6 +108,11 @@ const AppNavigator = () => (
       options={{ title: 'Exercise Library' }}
     />
 
+    <Stack.Screen 
+      name="WorkoutExecution" 
+      component={WorkoutExecutionScreen} 
+      options={{ title: 'Workout Execution' }}
+    />
   </Stack.Navigator>
 );
 
