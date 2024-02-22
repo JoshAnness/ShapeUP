@@ -27,6 +27,22 @@ const LoginScreen = () => {
   }
 
   const handleLogin = () => {
+    // Array of disallowed characters
+    const disallowedChars = ['{', '}', '[', ']', '/', '\\', '=', '<', '>', '@'];
+    //Special array for email
+    const disallowedEmailChars = ['{', '}', '[', ']', '/', '\\', '=', '<', '>'];
+    //find our items to check against array; email and password
+    // Checking email
+    if (disallowedEmailChars.some(char => email.includes(char))) {
+        alert("Email cannot contain special characters: {} [] / \\ = <> @");
+    return; // Prevent further execution
+        }
+    if (disallowedChars.some(char => password.includes(char))) {
+        alert("Password cannot contain special characters: {} [] / \\ = <> @");
+    return; // Prevent further execution
+            }
+
+
         signInWithEmailAndPassword(auth, email, password)
         .then(userCredentials => {
             const user = userCredentials.user;
