@@ -30,8 +30,8 @@ function CalendarInfo({ navigation }) {
   }, []);
 
   const handleDayPress = (day) => {
-    const selectedDate = day.dateString; // YYYY-MM-DD
-    const dayOfWeek = format(parseISO(selectedDate), 'EEEE'); // Gets day name like "Monday"
+    const selectedDate = day.dateString;
+    const dayOfWeek = format(parseISO(selectedDate), 'EEEE');
     navigation.navigate('Details', { selectedDate, dayOfWeek });
   };
 
