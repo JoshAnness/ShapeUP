@@ -1,8 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, StyleSheet, ScrollView, Image, TouchableOpacity } from 'react-native';
 import { db } from '../firebase';
 import { getStorage, ref, getDownloadURL } from 'firebase/storage';
 import { doc, getDoc, updateDoc } from 'firebase/firestore';
+import { useFocusEffect } from '@react-navigation/native';
 
 const daysOfWeek = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
 
@@ -12,31 +13,41 @@ const WorkoutDetails = ({ route, navigation }) => {
     const [selectedDays, setSelectedDays] = useState([]);
 
     useEffect(() => {
-        const fetchWorkoutDetails = async () => {
-            try {
-                const docRef = doc(db, 'workouts', workoutId);
-                const docSnap = await getDoc(docRef);
-    
-                if (docSnap.exists()) {
-                    let data = docSnap.data();
-                    setSelectedDays(data.assignedDays || []);
-    
-                    if (Array.isArray(data.exercises)) {
-                        const exercisesWithImages = await fetchExerciseImagesForWorkout(data);
-                        setWorkoutDetails({...data, exercises: exercisesWithImages});
-                    } else {
-                        setWorkoutDetails({...data, exercises: []});
-                    }
-                } else {
-                    console.log('No such workout document!');
-                }
-            } catch (error) {
-                console.error("Error fetching workout details:", error);
-            }
-        };
-    
         fetchWorkoutDetails();
-    }, [workoutId]);    
+    }, [workoutId]);
+
+    useFocusEffect(
+        useCallback(() => {
+            const onBackPress = () => {
+                saveSelectedDays();
+            };
+
+            return () => onBackPress();
+        }, [selectedDays])
+    );
+
+    const fetchWorkoutDetails = async () => {
+        try {
+            const docRef = doc(db, 'workouts', workoutId);
+            const docSnap = await getDoc(docRef);
+
+            if (docSnap.exists()) {
+                let data = docSnap.data();
+                setSelectedDays(data.assignedDays || []);
+
+                if (Array.isArray(data.exercises)) {
+                    const exercisesWithImages = await fetchExerciseImagesForWorkout(data);
+                    setWorkoutDetails({ ...data, exercises: exercisesWithImages });
+                } else {
+                    setWorkoutDetails({ ...data, exercises: [] });
+                }
+            } else {
+                console.log('No such workout document!');
+            }
+        } catch (error) {
+            console.error("Error fetching workout details:", error);
+        }
+    };
 
     const fetchExerciseImagesForWorkout = async (workoutData) => {
         const storage = getStorage();
@@ -54,17 +65,13 @@ const WorkoutDetails = ({ route, navigation }) => {
         const imageUrls = await Promise.all(
             [0, 1].map(async (index) => {
                 const imageRef = ref(storage, `exercise_images/${sanitizedExerciseName}_${index}.jpg`);
-                return getDownloadURL(imageRef).catch(() => null); // Return null if image not found
+                return getDownloadURL(imageRef).catch(() => null);
             })
         );
-        return imageUrls.filter(url => url !== null); // Filter out any null URLs
+        return imageUrls.filter(url => url !== null);
     };
 
-    if (!workoutDetails) {
-        return <Text>Loading workout details...</Text>;
-    }
-
-    const handleDaySelection = async (day) => {
+    const handleDaySelection = (day) => {
         let newSelectedDays;
         if (selectedDays.includes(day)) {
             newSelectedDays = selectedDays.filter(d => d !== day);
@@ -72,11 +79,13 @@ const WorkoutDetails = ({ route, navigation }) => {
             newSelectedDays = [...selectedDays, day];
         }
         setSelectedDays(newSelectedDays);
-    
+    };
+
+    const saveSelectedDays = async () => {
         const workoutRef = doc(db, 'workouts', workoutId);
         try {
             await updateDoc(workoutRef, {
-                assignedDays: newSelectedDays
+                assignedDays: selectedDays
             });
             console.log('Workout days updated successfully');
         } catch (error) {
@@ -84,9 +93,9 @@ const WorkoutDetails = ({ route, navigation }) => {
         }
     };
 
-    const handleAssignDays = () => {
-        navigation.navigate('CalendarIn', { workoutId, selectedDays });
-    };
+    if (!workoutDetails) {
+        return <Text>Loading workout details...</Text>;
+    }
 
     return (
         <ScrollView style={styles.container}>

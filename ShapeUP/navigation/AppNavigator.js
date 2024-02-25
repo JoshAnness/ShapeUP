@@ -8,14 +8,12 @@ import RegisterScreen from '../screens/RegisterScreen';
 import { signOut } from 'firebase/auth';
 import { auth } from '../firebase';
 import SettingsScreen from '../screens/SettingsScreen';
-import FeedScreen from '../screens/FeedScreen';
 import Calendar from '../screens/CalendarInfo';
 import CalendarInfo from '../screens/CalendarInfo';
 import DateDetails from '../screens/DateDetails';
 import ChatScreen from '../screens/WorkoutCreationScreen';
 import WorkoutDetails from '../screens/WorkoutDetails';
 import ExerciseLibraryScreen from '../screens/ExerciseLibraryScreen';
-import WorkoutExecutionScreen from '../screens/WorkoutExecutionScreen';
 
 const Stack = createStackNavigator();
 
@@ -73,12 +71,6 @@ const AppNavigator = () => (
     />
 
     <Stack.Screen 
-      name="Feed" 
-      component={FeedScreen} 
-      options={{ title: 'Feed' }}
-    />
-
-    <Stack.Screen 
       name="CalendarIn" 
       component={CalendarInfo} 
       options={{ title: 'Calendar' }}
@@ -108,11 +100,6 @@ const AppNavigator = () => (
       options={{ title: 'Exercise Library' }}
     />
 
-    <Stack.Screen 
-      name="WorkoutExecution" 
-      component={WorkoutExecutionScreen} 
-      options={{ title: 'Workout Execution' }}
-    />
   </Stack.Navigator>
 );
 

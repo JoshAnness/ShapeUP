@@ -1,9 +1,10 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { View, Text, ScrollView, StyleSheet, TouchableOpacity, TextInput, Image, Dimensions } from 'react-native';
 import { db } from '../firebase';
-import { collection, query, where, getDocs, doc, updateDoc, getDoc, setDoc } from 'firebase/firestore';
+import { collection, query, where, getDocs, doc, getDoc, updateDoc } from 'firebase/firestore';
 import { getStorage, ref, getDownloadURL } from 'firebase/storage';
 import { format, parseISO } from 'date-fns';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 
 const screenWidth = Dimensions.get('window').width;
 
@@ -12,145 +13,99 @@ function DateDetails({ route }) {
   const [workoutDetails, setWorkoutDetails] = useState([]);
   const [exerciseInputs, setExerciseInputs] = useState({});
   const [visibleImages, setVisibleImages] = useState({});
+  const navigation = useNavigation();
 
   useEffect(() => {
+    fetchWorkoutDetails();
+  }, [selectedDate]);
+
+  useFocusEffect(
+    useCallback(() => {
+      return () => saveExerciseInputs(); // This function is called when the screen is unfocused
+    }, [exerciseInputs])
+  );
+
+  async function fetchWorkoutDetails() {
     const dayOfWeek = format(parseISO(selectedDate), 'EEEE');
-    const fetchWorkoutDetailsForDay = async () => {
-      const q = query(collection(db, 'workouts'), where('assignedDays', 'array-contains', dayOfWeek));
-      const querySnapshot = await getDocs(q);
-      const workoutsPromises = querySnapshot.docs.map(async (doc) => {
-        const workoutData = doc.data();
-        const exercisesWithImages = await fetchExercisesImages(workoutData.exercises);
-        return { ...workoutData, id: doc.id, exercises: exercisesWithImages };
-      });
-      const workouts = await Promise.all(workoutsPromises);
-      setWorkoutDetails(workouts);
-      workouts.forEach(workout => loadExerciseInputs(workout.id));
-    };
+    const q = query(collection(db, 'workouts'), where('assignedDays', 'array-contains', dayOfWeek));
+    const querySnapshot = await getDocs(q);
+    const workouts = [];
+    for (const doc of querySnapshot.docs) {
+      const workoutData = { id: doc.id, ...doc.data() };
+      workoutData.exercisesWithImages = await fetchExercisesImages(workoutData.exercises);
+      workouts.push(workoutData);
+    }
+    setWorkoutDetails(workouts);
+    loadExerciseInputs(workouts);
+  }
 
-    const fetchExercisesImages = async (exercises) => {
-      const storage = getStorage();
-      return Promise.all(exercises.map(async (exercise) => {
-        const imageUrls = await Promise.all([0, 1].map(async index => {
-          const imageRef = ref(storage, `exercise_images/${exercise.replace(/\s+/g, '_').replace(/'/g, '').replace(/\//g, '_')}_${index}.jpg`);
-          try {
-            return await getDownloadURL(imageRef);
-          } catch {
-            return ''; // Return an empty string if the image is not found
-          }
-        }));
-        return { name: exercise, images: imageUrls.filter(Boolean) }; // Filter out empty strings
-      }));
-    };
-
-    const loadInputs = async () => {
-      for (const workout of workoutDetails) {
-        const docRef = doc(db, "exerciseInputs", `${workout.id}_${format(parseISO(selectedDate), 'yyyy-MM-dd')}`);
-        const docSnap = await getDoc(docRef);
-        if (docSnap.exists()) {
-          setExerciseInputs(prev => ({
-            ...prev,
-            [workout.id]: docSnap.data(),
-          }));
+  async function fetchExercisesImages(exercises) {
+    const storage = getStorage();
+    return Promise.all(exercises.map(async (exercise) => {
+      const images = await Promise.all([0, 1].map(async index => {
+        const imageRef = ref(storage, `exercise_images/${exercise.replace(/\s+/g, '_').replace(/'/g, '').replace(/\//g, '_')}_${index}.jpg`);
+        try {
+          return await getDownloadURL(imageRef);
+        } catch {
+          return '';
         }
+      }));
+      return { name: exercise, images: images.filter(Boolean) };
+    }));
+  }
+
+  async function loadExerciseInputs(workouts) {
+    for (const workout of workouts) {
+      const docRef = doc(db, "exerciseInputs", `${workout.id}_${format(parseISO(selectedDate), 'yyyy-MM-dd')}`);
+      const docSnap = await getDoc(docRef);
+      if (docSnap.exists()) {
+        setExerciseInputs(prev => ({ ...prev, [workout.id]: docSnap.data() }));
       }
-    };
-
-    if (workoutDetails.length > 0) {
-        loadInputs();
     }
+  }
 
-    fetchWorkoutDetailsForDay();
-  }, [workoutDetails, selectedDate]);
-
-  const loadExerciseInputs = async (workoutId) => {
-    const docRef = doc(db, "exerciseInputs", workoutId);
-    const docSnap = await getDoc(docRef);
-    if (docSnap.exists()) {
-      setExerciseInputs(prev => ({ ...prev, [workoutId]: docSnap.data() }));
+  async function saveExerciseInputs() {
+    for (const [workoutId, inputs] of Object.entries(exerciseInputs)) {
+      const docRef = doc(db, "exerciseInputs", `${workoutId}_${format(parseISO(selectedDate), 'yyyy-MM-dd')}`);
+      await updateDoc(docRef, inputs);
     }
-  };
+  }
 
-  const handleExerciseInput = async (workoutId, exerciseName, field, value) => {
-    const updatedInputs = {
-      ...exerciseInputs[workoutId],
-      [exerciseName]: {
-        ...exerciseInputs[workoutId]?.[exerciseName],
-        [field]: value,
-      },
-    };
-
-    setExerciseInputs(prev => ({ ...prev, [workoutId]: updatedInputs }));
-
-    const docRef = doc(db, "exerciseInputs", `${workoutId}_${format(parseISO(selectedDate), 'yyyy-MM-dd')}`);
-
-    try {
-      await setDoc(docRef, { [exerciseName]: updatedInputs[exerciseName] }, { merge: true });
-      console.log("Successfully updated Firestore.");
-    } catch (error) {
-      console.error("Error updating Firestore: ", error);
-    }
-  };
-
-  const toggleVisibility = (workoutId, exerciseName) => {
-    setVisibleImages(prev => ({
+  function handleExerciseInput(workoutId, exerciseName, field, value) {
+    setExerciseInputs(prev => ({
       ...prev,
       [workoutId]: {
         ...prev[workoutId],
-        [exerciseName]: !prev[workoutId]?.[exerciseName],
+        [exerciseName]: {
+          ...prev[workoutId][exerciseName],
+          [field]: value,
+        },
       },
     }));
-  };
-
-  const ImageContainer = ({images}) => (
-    <View style={styles.imagesContainer}>
-      {images.map((imageUrl, idx) => (
-        <Image key={idx} source={{ uri: imageUrl }} style={styles.image} />
-      ))}
-    </View>
-  );
+  }
 
   return (
     <ScrollView style={styles.container}>
-      {workoutDetails.map((workout) => (
+      {workoutDetails.map(workout => (
         <View key={workout.id}>
           <Text style={styles.workoutTitle}>{workout.name}</Text>
-          {workout.exercises.map((exercise) => (
-            <View key={exercise.name} style={styles.exerciseContainer}>
-              <TouchableOpacity onPress={() => toggleVisibility(workout.id, exercise.name)}>
+          {workout.exercisesWithImages.map((exercise, index) => (
+            <View key={index} style={styles.exerciseContainer}>
+              <TouchableOpacity onPress={() => setVisibleImages({ ...visibleImages, [`${workout.id}_${exercise.name}`]: !visibleImages[`${workout.id}_${exercise.name}`] })}>
                 <Text style={styles.exerciseName}>{exercise.name}</Text>
-                {visibleImages[workout.id]?.[exercise.name] && (
-                  <View style={styles.imagesContainer}>
-                    {exercise.images.map((imageUrl, idx) => (
-                      <Image key={idx} source={{ uri: imageUrl }} style={styles.image} />
-                    ))}
-                  </View>
-                )}
+                {visibleImages[`${workout.id}_${exercise.name}`] && exercise.images.map((url, idx) => (
+                  <Image key={idx} source={{ uri: url }} style={styles.image} />
+                ))}
               </TouchableOpacity>
-              <TextInput
-                style={styles.input}
-                placeholder="Sets"
-                onChangeText={(text) => handleExerciseInput(workout.id, exercise.name, 'sets', text)}
-                value={exerciseInputs[workout.id]?.[exercise.name]?.sets || ''}
-              />
-              <TextInput
-                style={styles.input}
-                placeholder="Reps"
-                onChangeText={(text) => handleExerciseInput(workout.id, exercise.name, 'reps', text)}
-                value={exerciseInputs[workout.id]?.[exercise.name]?.reps || ''}
-              />
-              <TextInput
-                style={styles.input}
-                placeholder="Max Weight"
-                onChangeText={(text) => handleExerciseInput(workout.id, exercise.name, 'weight', text)}
-                value={exerciseInputs[workout.id]?.[exercise.name]?.weight || ''}
-              />
+              <TextInput style={styles.input} placeholder="Sets" value={exerciseInputs[workout.id]?.[exercise.name]?.sets || ''} onChangeText={text => handleExerciseInput(workout.id, exercise.name, 'sets', text)} />
+              <TextInput style={styles.input} placeholder="Reps" value={exerciseInputs[workout.id]?.[exercise.name]?.reps || ''} onChangeText={text => handleExerciseInput(workout.id, exercise.name, 'reps', text)} />
+              <TextInput style={styles.input} placeholder="Max Weight" value={exerciseInputs[workout.id]?.[exercise.name]?.weight || ''} onChangeText={text => handleExerciseInput(workout.id, exercise.name, 'weight', text)} />
             </View>
           ))}
         </View>
       ))}
     </ScrollView>
-  );  
+  );
 }
 
 const styles = StyleSheet.create({
@@ -168,10 +123,6 @@ const styles = StyleSheet.create({
   exerciseName: {
     fontSize: 18,
     fontWeight: 'bold',
-    marginBottom: 10,
-  },
-  imagesScrollView: {
-    flexDirection: 'row',
     marginBottom: 10,
   },
   image: {
