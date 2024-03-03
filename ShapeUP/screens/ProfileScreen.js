@@ -7,9 +7,9 @@ import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import SegmentedControl from '@react-native-segmented-control/segmented-control';
 import { Calendar } from 'react-native-calendars';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { format } from 'date-fns';
 
 const ProfileScreen = ({ navigation }) => {
-
     const [firstName, setFirstName] = useState("");
     const [lastName, setLastName] = useState("");
     const [userProfilePic, setUserProfilePic] = useState(null);
@@ -17,6 +17,8 @@ const ProfileScreen = ({ navigation }) => {
     const [selectedSegment, setSelectedSegment] = useState(0);
     const [workouts, setWorkouts] = useState([]);
     const [activeFooterButton, setActiveFooterButton] = useState('home');
+    const [workoutsForToday, setWorkoutsForToday] = useState([]);
+    const [today, setToday] = useState(format(new Date(), 'yyyy-MM-dd'));
 
     useEffect(() => {
         const fetchUserData = async () => {
@@ -39,68 +41,13 @@ const ProfileScreen = ({ navigation }) => {
     
         fetchUserData();
         
-    }, [auth.currentUser]);   
-
-    const uploadImage = async (uri) => {
-        try {
-            console.log('Converting URI to blob');
-            
-            const response = await fetch(uri);
-            const blob = await response.blob();
-            
-            let filename = uri.substring(uri.lastIndexOf('/') + 1);
-            const extension = filename.split('.').pop();
-            const name = filename.split('.').slice(0, -1).join('.');
-            filename = name + Date.now() + '.' + extension;
-        
-            const storageRef = ref(storage, `users/${auth.currentUser.uid}/${filename}`);
-            console.log('Starting upload to Firebase');
-        
-            const uploadTask = await uploadBytes(storageRef, blob);
-    
-            await uploadTask;
-        
-            console.log('Upload to Firebase complete');
-            
-            const downloadURL = await getDownloadURL(storageRef);
-            console.log('Download URL:', downloadURL);
-        
-            return downloadURL;
-        } catch (error) {
-            console.error("Error in uploadImage:", error);
-        }
-    };    
-
-    const selectProfilePicture = async () => {
-        let result = await ImagePicker.launchImageLibraryAsync({
-          mediaTypes: ImagePicker.MediaTypeOptions.All,
-          allowsEditing: true,
-          aspect: [4, 3],
-          quality: 1,
-        });
-        
-        if (!result.canceled) {
-            const uri = result.uri;
-            setUserProfilePic(uri); 
-    
-            const downloadURL = await uploadImage(uri);
-    
-            if (downloadURL) {
-                const userRef = doc(db, 'users', auth.currentUser.uid);
-                await updateDoc(userRef, { 
-                    userImg: downloadURL  
-                });
-                console.log('User image URL updated in Firestore.');
-            }
-        }
-    };     
+    }, [auth.currentUser]);       
 
     const handleToggle = (button) => {
         setSelectedButton(button);
     };
 
     useEffect(() => {
-        // Fetch workouts from Firestore
         const workoutRef = collection(db, 'workouts');
         const q = query(workoutRef, where('userId', '==', auth.currentUser.uid));
         const unsubscribe = onSnapshot(q, (querySnapshot) => {
@@ -140,14 +87,17 @@ const ProfileScreen = ({ navigation }) => {
     return (
         <View style={styles.container}>
             <View style={styles.headerContainer}>
-                <TouchableOpacity onPress={selectProfilePicture}>
-                    <Image 
-                        source={userProfilePic ? { uri: userProfilePic } : require('../assets/profile.png')} 
-                        style={styles.profileImage} 
-                    />
-                </TouchableOpacity>
-                <Text style={styles.header}>{firstName && lastName ? `${firstName} ${lastName}` : "User"}</Text>
-                {username && <Text style={styles.username}>@{username}</Text>}
+                <View style={styles.headerTopRow}>
+                    <Text style={styles.headerTitle}>Home</Text>
+                    <TouchableOpacity onPress={() => navigation.navigate('Settings')} style={styles.profileIconContainer}>
+                        <Image 
+                            source={userProfilePic ? { uri: userProfilePic } : require('../assets/settingsIcon.png')} 
+                            style={styles.profileIcon} 
+                        />
+                    </TouchableOpacity>
+                </View>
+                <Text style={styles.welcomeText}>Welcome, {firstName || 'User'} {lastName || 'User'}</Text>
+                <Text style={styles.dateText}>{format(new Date(), 'd MMMM, yyyy')}</Text>
             </View>
 
             <SegmentedControl
@@ -170,13 +120,6 @@ const ProfileScreen = ({ navigation }) => {
                 <Calendar onDayPress={handleDayPress} />
             )}
 
-            <TouchableOpacity style={styles.settingsButton} onPress={() => navigation.navigate('Settings')}>
-                <Image 
-                    source={require('../assets/settingsIcon.png')}
-                    style={styles.settingsIcon} 
-                />
-            </TouchableOpacity>
-
             <View style={styles.footerContainer}>
                 <FooterButton name="home" icon={require('../assets/homeIcon.png')} onPress={() => navigation.navigate('Profile')} />
                 <FooterButton name="add" icon={require('../assets/addIcon.png')} onPress={() => navigation.navigate('WorkoutCreation')} />
@@ -189,60 +132,81 @@ const ProfileScreen = ({ navigation }) => {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        paddingTop: '5%',
-        paddingLeft: '5%',
-        paddingRight: '5%',
-        paddingBottom: 0, 
-        backgroundColor: '#FAFAFA',
+        backgroundColor: '#FFFFFF',
+    },
+    headerContainer: {
+        backgroundColor: '#FFFFFF',
+        paddingHorizontal: 20,
+        paddingTop: 60,
+        paddingBottom: 20,
+        borderBottomWidth: 1,
+        borderBottomColor: '#E8E8E8',
+    },
+    headerTopRow: {
+        position: 'absolute',
+        top: 60,
+        left: 0,
+        right: 0,
+        flexDirection: 'row',
+        justifyContent: 'space-between',
         alignItems: 'center',
-        justifyContent: 'space-between'
+        paddingHorizontal: 20,
+    },
+    headerTitle: {
+        position: 'absolute',
+        textAlign: 'center',
+        width: '100%',
+        fontSize: 20,
+        fontWeight: 'bold',
+        color: '#000',
+    },
+    profileIconContainer: {
+    },
+    profileIcon: {
+        width: 40, 
+        height: 40,
+        borderRadius: 20, 
+    },
+    welcomeText: {
+        fontSize: 28, 
+        fontWeight: 'bold',
+        color: '#000', 
+        marginTop: 10, 
+    },
+    dateText: {
+        fontSize: 18, 
+        color: '#6D6D6D', 
+        marginBottom: 20, 
+    },
+    segmentedControl: {
+        width: '90%',
+        alignSelf: 'center',
+        marginVertical: 20,
     },
     contentContainer: {
         width: '100%',
-        alignItems: 'center'
-    },
-    header: {
-        marginBottom: 5,
-        fontSize: 24,
-        fontWeight: 'bold',
-        color: '#333',
-        textAlign: 'center'
     },
     item: {
-        width: '100%',
-        padding: 15,
-        marginVertical: 10,
-        borderColor: '#ccc',
-        borderWidth: 1.5,
-        borderRadius: 10,
-        backgroundColor: '#ffffff',
-        alignItems: 'center'
+        width: '90%', 
+        alignSelf: 'center', 
+        paddingVertical: 20, 
+        paddingHorizontal: 20, 
+        marginVertical: 10, 
+        backgroundColor: '#F8F8F8', 
+        borderRadius: 10, 
+        borderWidth: 1,
+        borderColor: '#E8E8E8', 
+        alignItems: 'center',
     },
     itemTitle: {
-        fontSize: 20,
+        fontSize: 16,
         fontWeight: '500',
-        marginBottom: 10,
-        textAlign: 'center'
-    },
-    profileImage: {
-        width: 150,
-        height: 150,
-        borderRadius: 40,
-        marginBottom: '10%'
-    },
-    headerContainer: {
-        flexDirection: 'column',
-        alignItems: 'center',
-        justifyContent: 'center',
-        marginTop: '15%',
-        marginBottom: 15,
-        width: '100%'
-    },    
+        color: '#000', 
+    },  
     footerContainer: {
         flexDirection: 'row',
         justifyContent: 'space-around',
         alignItems: 'center',
-        backgroundColor: 'white', 
         width: '100%',
         borderTopWidth: 1,
         borderTopColor: '#e1e1e1',
@@ -258,104 +222,6 @@ const styles = StyleSheet.create({
         width: 30,
         height: 30,
         resizeMode: 'contain',
-    },
-    settingsButton: {
-        position: 'absolute', 
-        top: 50,
-        right: 25,
-        zIndex: 1  
-    },
-    settingsIcon: {
-        width: 35,
-        height: 35,
-        resizeMode: 'contain'
-    },
-    mainContainer: {
-        flexDirection: 'row',
-        justifyContent: 'center',
-        alignItems: 'center'
-    },
-    mainButton: {
-        flex: 1,
-        height: 45,
-        margin: 10,
-        borderRadius: 8,
-        backgroundColor: '#4CAF50',
-        justifyContent: 'center',
-        alignItems: 'center',
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.3,
-        shadowRadius: 4,
-        elevation: 4
-    },
-    mainButtonText: {
-        color: '#FFF',
-        fontWeight: 'bold',
-        fontSize: 16
-    },
-    selectedButton: {
-        backgroundColor: '#4CAF50',
-    },
-    deselectedButton: {
-        backgroundColor: '#A5D6A7', 
-    },
-    centeredView: {
-        flex: 1,
-        marginTop: '100%',
-        marginHorizontal: '5%',
-    },
-    modalView: {
-        height: '100%',
-        width: '100%',
-        backgroundColor: "white",
-        borderRadius: 20,
-        padding: 35,
-        alignItems: "center",
-        shadowColor: "#000",
-        shadowOffset: {
-            width: 0,
-            height: 2
-        },
-        shadowOpacity: 0.1,
-        shadowRadius: 2,
-        elevation: 5
-    },
-    modalText: {
-        marginBottom: '5%',
-        textAlign: "center",
-        fontWeight: 'bold',
-        fontSize: 20
-    },
-    username: {
-        color: '#888',
-        fontSize: 16
-    },    
-    segmentedControl: {
-        width: '90%',
-        marginVertical: 20,
-    },
-    contentContainer: {
-        width: '100%',
-    },
-    button: {
-        padding: 15,
-        margin: 10,
-        backgroundColor: '#4CAF50',
-        borderRadius: 8,
-        alignItems: 'center'
-    },
-    aiWorkoutCreationButton: {
-        padding: 15,
-        margin: 10,
-        backgroundColor: '#4CAF50',
-        borderRadius: 8,
-        alignItems: 'center',
-        width: '90%'
-    },
-    buttonText: {
-        color: 'white',
-        fontWeight: 'bold'
     },
 });
 
