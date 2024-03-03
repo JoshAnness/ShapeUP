@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Image, FlatList } from 'react-native';
 import { auth, db, storage } from '../firebase';
-import { getDoc, doc, collection, query, where, onSnapshot } from 'firebase/firestore';
+import { getDoc, doc, collection, query, where, onSnapshot, updateDoc } from 'firebase/firestore';
 import * as ImagePicker from 'expo-image-picker';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import SegmentedControl from '@react-native-segmented-control/segmented-control';
 import { Calendar } from 'react-native-calendars';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 const ProfileScreen = ({ navigation }) => {
 
@@ -15,11 +16,11 @@ const ProfileScreen = ({ navigation }) => {
     const [username, setUsername] = useState("");
     const [selectedSegment, setSelectedSegment] = useState(0);
     const [workouts, setWorkouts] = useState([]);
+    const [activeFooterButton, setActiveFooterButton] = useState('home');
 
     useEffect(() => {
         const fetchUserData = async () => {
             if (auth.currentUser) {
-                // Fetch user data
                 const userRef = doc(db, 'users', auth.currentUser.uid);
                 const docSnapshot = await getDoc(userRef);
     
@@ -32,14 +33,13 @@ const ProfileScreen = ({ navigation }) => {
                     console.warn("User document doesn't exist");
                 }
     
-                // Return the cleanup function to unsubscribe from the listener
                 return () => unsubscribe();
             }
         };
     
         fetchUserData();
         
-    }, [auth.currentUser]);    
+    }, [auth.currentUser]);   
 
     const uploadImage = async (uri) => {
         try {
@@ -80,25 +80,20 @@ const ProfileScreen = ({ navigation }) => {
         });
         
         if (!result.canceled) {
-            const uri = result.assets[0].uri;
-            setUserProfilePic(uri);  // Set the local URI to the state for UI display.
+            const uri = result.uri;
+            setUserProfilePic(uri); 
     
-            // Start uploading the selected image to Firebase Storage.
             const downloadURL = await uploadImage(uri);
     
-            // Once the image is uploaded, update the user document in Firestore.
             if (downloadURL) {
                 const userRef = doc(db, 'users', auth.currentUser.uid);
-                updateDoc(userRef, {
-                    userImg: downloadURL  // Set the Firestore userImg field to the download URL.
-                }).then(() => {
-                    console.log('User image URL updated in Firestore.');
-                }).catch(error => {
-                    console.error("Error updating user image URL in Firestore:", error);
+                await updateDoc(userRef, { 
+                    userImg: downloadURL  
                 });
+                console.log('User image URL updated in Firestore.');
             }
         }
-    };      
+    };     
 
     const handleToggle = (button) => {
         setSelectedButton(button);
@@ -128,6 +123,17 @@ const ProfileScreen = ({ navigation }) => {
     const renderWorkoutItem = ({ item }) => (
         <TouchableOpacity style={styles.item} onPress={() => navigation.navigate('WorkoutDetails', { workoutId: item.id })}>
             <Text style={styles.itemTitle}>{item.name}</Text>
+        </TouchableOpacity>
+    );
+
+    const FooterButton = ({ name, icon, onPress }) => (
+        <TouchableOpacity onPress={() => {
+            onPress();
+            setActiveFooterButton(name);
+          }} 
+          style={[styles.footerButton, activeFooterButton === name ? styles.activeFooterButton : {}]}
+        >
+          <Image source={icon} style={styles.footerIcon} />
         </TouchableOpacity>
     );
 
@@ -164,16 +170,18 @@ const ProfileScreen = ({ navigation }) => {
                 <Calendar onDayPress={handleDayPress} />
             )}
 
-            <TouchableOpacity style={styles.aiWorkoutCreationButton} onPress={() => navigation.navigate('WorkoutCreation')}>
-                <Text style={styles.buttonText}>AI Workout Creation</Text>
-            </TouchableOpacity>
-
             <TouchableOpacity style={styles.settingsButton} onPress={() => navigation.navigate('Settings')}>
                 <Image 
                     source={require('../assets/settingsIcon.png')}
                     style={styles.settingsIcon} 
                 />
             </TouchableOpacity>
+
+            <View style={styles.footerContainer}>
+                <FooterButton name="home" icon={require('../assets/homeIcon.png')} onPress={() => navigation.navigate('Profile')} />
+                <FooterButton name="add" icon={require('../assets/addIcon.png')} onPress={() => navigation.navigate('WorkoutCreation')} />
+                <FooterButton name="calendar" icon={require('../assets/calendarIcon.png')} onPress={() => navigation.navigate('Calendar')} />
+            </View>
         </View>
     );
 }
@@ -181,9 +189,13 @@ const ProfileScreen = ({ navigation }) => {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        padding: '5%',
-        backgroundColor: '#f4f4f8',
-        alignItems: 'center'
+        paddingTop: '5%',
+        paddingLeft: '5%',
+        paddingRight: '5%',
+        paddingBottom: 0, 
+        backgroundColor: '#FAFAFA',
+        alignItems: 'center',
+        justifyContent: 'space-between'
     },
     contentContainer: {
         width: '100%',
@@ -228,21 +240,24 @@ const styles = StyleSheet.create({
     },    
     footerContainer: {
         flexDirection: 'row',
-        justifyContent: 'space-between',
+        justifyContent: 'space-around',
         alignItems: 'center',
-        position: 'absolute',
-        bottom: '5%',
-        left: '5%',
-        right: '5%'
+        backgroundColor: 'white', 
+        width: '100%',
+        borderTopWidth: 1,
+        borderTopColor: '#e1e1e1',
+        paddingVertical: 10,
     },
     footerButton: {
-        flex: 1,
-        justifyContent: 'center',
         alignItems: 'center',
-        height: 40,
-        margin: 5,
-        backgroundColor: '#e0e0e0',
-        borderRadius: 8
+        justifyContent: 'center',
+        flex: 1,
+        paddingVertical: 15,
+    },
+    footerIcon: {
+        width: 30,
+        height: 30,
+        resizeMode: 'contain',
     },
     settingsButton: {
         position: 'absolute', 
