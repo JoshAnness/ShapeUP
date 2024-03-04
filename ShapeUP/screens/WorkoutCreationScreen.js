@@ -1,6 +1,6 @@
 import axios from 'axios';
 import React, { useState, useEffect } from 'react';
-import { View, TextInput, Button, Text, ScrollView, Image, TouchableOpacity, StyleSheet, Platform, StatusBar, ActivityIndicator } from 'react-native';
+import { Alert, View, TextInput, Button, Text, ScrollView, Image, TouchableOpacity, StyleSheet, Platform, StatusBar, ActivityIndicator } from 'react-native';
 import { db, auth } from '../firebase';
 import { doc, getDoc, collection, addDoc } from 'firebase/firestore';
 import { getStorage, ref, getDownloadURL } from 'firebase/storage';
@@ -122,7 +122,7 @@ const ChatScreen = () => {
   const navigation = useNavigation();
   const route = useRoute();
   const [currentStep, setCurrentStep] = useState(1);
-  const [workoutGoal, setWorkoutGoal] = useState('Hypertrophy');
+  const [workoutGoal, setWorkoutGoal] = useState('');
   const [customGoal, setCustomGoal] = useState('');
   const [selectedMuscles, setSelectedMuscles] = useState(new Set());
   const [customMuscle, setCustomMuscle] = useState('');
@@ -167,6 +167,14 @@ const ChatScreen = () => {
   }, [navigation, route.params?.selectedExercisesFromLibrary]);
 
   const handleNextStep = () => {
+    if (currentStep === 1 && workoutGoal === '') {
+      Alert.alert("Selection Required", "Please select a workout goal before continuing.");
+      return;
+    }
+    if (currentStep === 2 && selectedMuscles.size === 0) { // Adapt condition based on your use case
+      Alert.alert("Selection Required", "Please select at least one muscle group to continue."); // Customize message
+      return;
+    }
     setCurrentStep(currentStep + 1);
   };
 
@@ -272,43 +280,74 @@ const ChatScreen = () => {
 
   const muscleGroups = ['Abdominals', 'Abductors', 'Adductors', 'Biceps', 'Calves', 'Chest', 'Forearms', 'Glutes', 'Hamstrings', 'Lats', 'Lower back', 'Middle back', 'Neck', 'Quadriceps', 'Shoulders', 'Traps', 'Triceps'];
 
+  const workoutGoals = [
+    { label: "Hypertrophy", description: "Increase muscle size" },
+    { label: "Strength", description: "Increase overall strength" },
+    { label: "Endurance", description: "Improve endurance and stamina" },
+  ];
+
+  const renderWorkoutGoalOption = (goal) => (
+    <TouchableOpacity onPress={() => setWorkoutGoal(goal.label)} style={styles.option}>
+      <Checkbox value={workoutGoal === goal.label} style={styles.checkbox} />
+      <View style={styles.textContainer}>
+        <Text style={styles.answerText}>{goal.label}</Text>
+        <Text style={styles.subtext}>{goal.description}</Text>
+      </View>
+    </TouchableOpacity>
+  );
+
+  const selectWorkoutGoal = (goal) => {
+    setWorkoutGoal(workoutGoal === goal ? '' : goal);
+  };
+
+  const canProceed = workoutGoal !== '';
+
   return (
-    <ScrollView style={styles.container}>
+    <ScrollView contentContainerStyle={styles.container}>
+      <View style={styles.progressBarContainer}>
+        <View style={[styles.progressBar, { width: `${(currentStep / 3) * 100}%` }]} />
+      </View>
       {currentStep === 1 && (
         <>
-          <Text style={styles.title}>Select Your Workout Goal</Text>
-          <Picker
-            selectedValue={workoutGoal}
-            style={styles.picker}
-            onValueChange={handleGoalSelection}>
-            <Picker.Item label="Hypertrophy (Muscle Size)" value="Hypertrophy" />
-            <Picker.Item label="Speed, Power, and Strength" value="Speed, Power, and Strength" />
-            <Picker.Item label="Something Else" value="Something Else" />
-          </Picker>
-          {workoutGoal === 'Something Else' && (
-            <TextInput
-              style={styles.input}
-              placeholder="Specify your goal"
-              value={customGoal}
-              onChangeText={setCustomGoal}
-            />
-          )}
-          <Button title="Next" onPress={handleNextStep} />
-          <Button title="Create Custom Workout" onPress={navigateToFinalStep} />
+          {workoutGoals.map((goal) => (
+            <TouchableOpacity
+              key={goal.label}
+              onPress={() => selectWorkoutGoal(goal.label)}
+              style={styles.option}
+            >
+              <Checkbox
+                value={workoutGoal === goal.label}
+                onValueChange={() => selectWorkoutGoal(goal.label)}
+                style={styles.checkbox}
+              />
+              <View style={styles.textContainer}>
+                <Text style={styles.answerText}>{goal.label}</Text>
+                <Text style={styles.subtext}>{goal.description}</Text>
+              </View>
+            </TouchableOpacity>
+          ))}
+          <TouchableOpacity onPress={handleNextStep} style={styles.nextButton}>
+            <Text style={styles.buttonText}>Next</Text>
+          </TouchableOpacity>
         </>
       )}
-  
       {currentStep === 2 && (
         <>
-          <Text style={styles.title}>Select Muscles to Work Out</Text>
           {muscleGroups.map((muscle) => (
-            <View key={muscle} style={styles.checkboxContainer}>
+            <TouchableOpacity
+              key={muscle}
+              onPress={() => toggleMuscleSelection(muscle)}
+              style={[styles.option, { marginBottom: 10 }]} // Reduced marginBottom for step 2
+            >
               <Checkbox
                 value={selectedMuscles.has(muscle)}
                 onValueChange={() => toggleMuscleSelection(muscle)}
+                style={styles.checkbox}
               />
-              <Text style={styles.label}>{muscle}</Text>
-            </View>
+              <View style={styles.textContainer}>
+                <Text style={styles.answerText}>{muscle}</Text>
+              </View>
+            </TouchableOpacity>
           ))}
           <TextInput
             style={styles.input}
@@ -318,7 +357,12 @@ const ChatScreen = () => {
             returnKeyType="done"
             blurOnSubmit={true}
           />
-          <Button title="Next" onPress={() => { handleUserInput(); handleNextStep(); }} />
+          <TouchableOpacity onPress={() => { handleUserInput(); handleNextStep(); }} style={styles.nextButton}>
+            <Text style={styles.buttonText}>Next</Text>
+          </TouchableOpacity>
+          <TouchableOpacity onPress={() => setCurrentStep(1)} style={styles.button}>
+            <Text style={styles.buttonText}>Back</Text>
+          </TouchableOpacity>
         </>
       )}
 
@@ -392,26 +436,77 @@ const ChatScreen = () => {
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
-    paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0,
-    paddingHorizontal: 16,
-    backgroundColor: '#F3F4F6', // Light grey background
+    flexGrow: 1,
+    padding: 20,
+    justifyContent: 'top',
+    backgroundColor: '#FAFAFA',
   },
-  inputContainer: {
+  progressBarContainer: {
+    height: 5,
+    width: '100%',
+    backgroundColor: '#ECE5F7',
+    borderRadius: 5,
+    marginBottom: 30,
+  },
+  progressBar: {
+    height: '100%',
+    backgroundColor: '#8337FE',
+    borderRadius: 5,
+  },
+  option: {
     flexDirection: 'row',
     alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#DDD',
+    borderRadius: 25,
+    padding: 20,
     marginBottom: 20,
+    width: '100%',
+  },
+  textContainer: {
+    marginLeft: 10,
+  },
+  checkbox: {
+    marginRight: 10,
+  },
+  answerText: {
+    fontSize: 18,
+    fontWeight: '600',
+  },
+  subtext: {
+    fontSize: 14,
+    color: '#AAA',
+  },
+  nextButton: {
+    backgroundColor: '#8337FE',
+    paddingVertical: 20,
+    paddingHorizontal: 60,
+    borderRadius: 25,
+    alignItems: 'center',
+    marginTop: 20,
+  },
+  buttonText: {
+    color: '#FFFFFF',
+    fontSize: 16,
   },
   input: {
-    flex: 1,
-    marginRight: 8,
-    paddingHorizontal: 15,
-    paddingVertical: 10,
+    borderWidth: 1,
+    borderColor: '#cccccc',
+    padding: 10,
     borderRadius: 5,
-    backgroundColor: '#FFFFFF', 
+    marginBottom: 20,
+    backgroundColor: '#FFFFFF',
   },
-  scrollView: {
-    flex: 1,
+  button: {
+    backgroundColor: '#8337FE',
+    paddingVertical: 20,
+    paddingHorizontal: 60,
+    borderRadius: 25,
+    alignItems: 'center',
+    marginTop: 20,
+  },
+  stepContainer: {
+    alignItems: 'center',
   },
   exerciseItem: {
     flexDirection: 'row',
@@ -453,33 +548,6 @@ const styles = StyleSheet.create({
   },
   exerciseInstructions: {
     marginTop: 8,
-  },
-  submitContainer: {
-    marginTop: 10,
-    marginBottom: 20,
-  },
-  submissionStatus: {
-    marginTop: 10,
-    color: 'green',
-    fontWeight: 'bold',
-    textAlign: 'center',
-  },
-  checkboxContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 5,
-  },
-  checkbox: {
-    marginRight: 8,
-  },
-  label: {
-    marginLeft: 8,
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 20
   },
 });
 
