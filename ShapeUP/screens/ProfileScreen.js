@@ -1,24 +1,23 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Image, FlatList } from 'react-native';
 import { auth, db, storage } from '../firebase';
-import { getDoc, doc, collection, query, where, onSnapshot, updateDoc } from 'firebase/firestore';
-import * as ImagePicker from 'expo-image-picker';
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { getDoc, doc, collection, query, where, onSnapshot, updateDoc, getDocs } from 'firebase/firestore';
 import SegmentedControl from '@react-native-segmented-control/segmented-control';
 import { Calendar } from 'react-native-calendars';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { format } from 'date-fns';
+import { useFocusEffect } from '@react-navigation/native';
 
 const ProfileScreen = ({ navigation }) => {
-    const [firstName, setFirstName] = useState("");
-    const [lastName, setLastName] = useState("");
-    const [userProfilePic, setUserProfilePic] = useState(null);
-    const [username, setUsername] = useState("");
     const [selectedSegment, setSelectedSegment] = useState(0);
     const [workouts, setWorkouts] = useState([]);
     const [activeFooterButton, setActiveFooterButton] = useState('home');
-    const [workoutsForToday, setWorkoutsForToday] = useState([]);
-    const [today, setToday] = useState(format(new Date(), 'yyyy-MM-dd'));
+    const [todaysWorkouts, setTodaysWorkouts] = useState([]);
+    const [user, setUser] = useState({
+        firstName: '',
+        lastName: '',
+        userProfilePic: null,
+    });
+    const today = format(new Date(), 'yyyy-MM-dd');
 
     useEffect(() => {
         const fetchUserData = async () => {
@@ -27,21 +26,36 @@ const ProfileScreen = ({ navigation }) => {
                 const docSnapshot = await getDoc(userRef);
     
                 if (docSnapshot.exists()) {
-                    setFirstName(docSnapshot.data().firstName || "");
-                    setLastName(docSnapshot.data().lastName || "");
-                    setUserProfilePic(docSnapshot.data().userImg || null);
-                    setUsername(docSnapshot.data().username || ""); 
+                    const userData = docSnapshot.data();
+                    setUser({
+                        ...user,
+                        firstName: userData.firstName || '',
+                        lastName: userData.lastName || '',
+                        userProfilePic: userData.userImg || null,
+                    });
                 } else {
                     console.warn("User document doesn't exist");
                 }
-    
-                return () => unsubscribe();
             }
         };
     
         fetchUserData();
         
-    }, [auth.currentUser]);       
+    }, [auth.currentUser]); 
+
+    useFocusEffect(
+        useCallback(() => {
+            const dayOfWeek = format(new Date(), 'EEEE');
+            const fetchTodaysWorkouts = async () => {
+                const q = query(collection(db, 'workouts'), where('assignedDays', 'array-contains', dayOfWeek));
+                const querySnapshot = await getDocs(q);
+                const workouts = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                setTodaysWorkouts(workouts);
+            };
+
+            fetchTodaysWorkouts();
+        }, [])
+    );
 
     const handleToggle = (button) => {
         setSelectedButton(button);
@@ -61,8 +75,16 @@ const ProfileScreen = ({ navigation }) => {
         return () => unsubscribe();
     }, []);
 
+    async function fetchTodaysWorkouts() {
+        const dayOfWeek = format(new Date(), 'EEEE');
+        const q = query(collection(db, 'workouts'), where('assignedDays', 'array-contains', dayOfWeek));
+        const querySnapshot = await getDocs(q);
+        const workouts = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        setTodaysWorkouts(workouts);
+    }
+
     const handleDayPress = (day) => {
-        const selectedDate = day.dateString; // Assumes date is in YYYY-MM-DD format
+        const selectedDate = day.dateString;
     
         navigation.navigate('Details', { selectedDate });
     };
@@ -86,19 +108,28 @@ const ProfileScreen = ({ navigation }) => {
 
     return (
         <View style={styles.container}>
-            <View style={styles.headerContainer}>
-                <View style={styles.headerTopRow}>
-                    <Text style={styles.headerTitle}>Home</Text>
-                    <TouchableOpacity onPress={() => navigation.navigate('Settings')} style={styles.profileIconContainer}>
-                        <Image 
-                            source={userProfilePic ? { uri: userProfilePic } : require('../assets/settingsIcon.png')} 
-                            style={styles.profileIcon} 
-                        />
+            <TouchableOpacity onPress={() => navigation.navigate('Settings')} style={{ marginBottom: 20 }}>
+                <Image
+                    source={user.userProfilePic ? { uri: user.userProfilePic } : require('../assets/profile.png')}
+                    style={styles.profilePic}
+                />
+            </TouchableOpacity>
+            <Text style={styles.welcomeText}>Welcome, {user.firstName} {user.lastName}</Text>
+            <Text style={styles.date}>{format(new Date(), 'PPP')}</Text>
+            
+            {todaysWorkouts.length > 0 ? (
+                <View style={{ alignItems: 'center', width: '100%' }}>
+                    {/* Simplified to navigate directly to DateDetails with today's date */}
+                    <TouchableOpacity
+                        style={styles.workoutItem}
+                        onPress={() => navigation.navigate('Details', { selectedDate: today })}
+                    >
+                        <Text style={styles.workoutTitle}>Today's Workout</Text>
                     </TouchableOpacity>
                 </View>
-                <Text style={styles.welcomeText}>Welcome, {firstName || 'User'} {lastName || 'User'}</Text>
-                <Text style={styles.dateText}>{format(new Date(), 'd MMMM, yyyy')}</Text>
-            </View>
+            ) : (
+                <Text style={styles.noWorkoutText}>No workouts scheduled for today.</Text>
+            )}
 
             <SegmentedControl
                 values={['Workouts', 'Calendar']}
@@ -132,51 +163,49 @@ const ProfileScreen = ({ navigation }) => {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#FFFFFF',
-    },
-    headerContainer: {
-        backgroundColor: '#FFFFFF',
-        paddingHorizontal: 20,
-        paddingTop: 60,
-        paddingBottom: 20,
-        borderBottomWidth: 1,
-        borderBottomColor: '#E8E8E8',
-    },
-    headerTopRow: {
-        position: 'absolute',
-        top: 60,
-        left: 0,
-        right: 0,
-        flexDirection: 'row',
-        justifyContent: 'space-between',
         alignItems: 'center',
-        paddingHorizontal: 20,
+        justifyContent: 'flex-start',
+        paddingTop: 50,
+        backgroundColor: '#fff',
     },
-    headerTitle: {
-        position: 'absolute',
-        textAlign: 'center',
+    header: {
         width: '100%',
-        fontSize: 20,
-        fontWeight: 'bold',
-        color: '#000',
+        alignItems: 'center',
     },
-    profileIconContainer: {
+    profilePic: {
+        width: 120,
+        height: 120,
+        borderRadius: 60,
     },
-    profileIcon: {
-        width: 40, 
-        height: 40,
-        borderRadius: 20, 
+    date: {
+        fontSize: 18,
     },
     welcomeText: {
         fontSize: 28, 
-        fontWeight: 'bold',
-        color: '#000', 
-        marginTop: 10, 
+        color: '#39383C', 
+        marginBottom: 10,
     },
     dateText: {
         fontSize: 18, 
         color: '#6D6D6D', 
         marginBottom: 20, 
+    },
+    workoutItem: {
+        padding: 10,
+        marginVertical: 5,
+        backgroundColor: '#E8E8E8',
+        borderRadius: 5,
+        width: '90%',
+        alignItems: 'center',
+    },
+    workoutTitle: {
+        fontSize: 16,
+        color: '#000',
+    },
+    noWorkoutText: {
+        fontSize: 16,
+        color: '#666',
+        marginTop: 10,
     },
     segmentedControl: {
         width: '90%',
