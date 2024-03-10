@@ -57,7 +57,7 @@ const AppNavigator = () => (
     />
 
     <Stack.Screen 
-      name="Profile" 
+      name="Home" 
       component={ProfileScreen} 
       options={({ navigation }) => ({
         headerShown: false

@@ -266,7 +266,7 @@ const ChatScreen = () => {
       .then(() => {
         setIsSubmitted(true);
         // Navigate back to the Profile Screen after successful submission
-        navigation.navigate('Profile');
+        navigation.navigate('Home');
       })
       .catch(error => {
         console.error("Error submitting workout: ", error);
@@ -331,13 +331,14 @@ const ChatScreen = () => {
           </TouchableOpacity>
         </>
       )}
+
       {currentStep === 2 && (
         <>
           {muscleGroups.map((muscle) => (
             <TouchableOpacity
               key={muscle}
               onPress={() => toggleMuscleSelection(muscle)}
-              style={[styles.option, { marginBottom: 10 }]} // Reduced marginBottom for step 2
+              style={[styles.option, { marginBottom: 10 }]}
             >
               <Checkbox
                 value={selectedMuscles.has(muscle)}
@@ -371,10 +372,15 @@ const ChatScreen = () => {
           {isLoading ? (
             <View style={styles.loadingContainer}>
               <ActivityIndicator size="large" color="#0000ff" />
-              <Text>Loading exercises...</Text>
             </View>
           ) : (
             <>
+              <TextInput
+                style={styles.input}
+                placeholder="Enter Workout Name"
+                value={workoutName}
+                onChangeText={setWorkoutName}
+              />
               <ScrollView style={styles.scrollView}>
                 {workoutPlan.map((exercise, index) => (
                   <View key={index}>
@@ -402,34 +408,22 @@ const ChatScreen = () => {
                 ))}
               </ScrollView>
 
-              {/* Workout Name Input */}
-              <TextInput
-                style={styles.input}
-                placeholder="Enter Workout Name"
-                value={workoutName}
-                onChangeText={setWorkoutName}
-              />
+              <TouchableOpacity onPress={handleSubmitWorkout} style={styles.button}>
+                <Text style={styles.buttonText}>Submit Workout</Text>
+              </TouchableOpacity>
 
-              <Button 
-                title="Pick From Exercise Library" 
-                onPress={navigateToExerciseLibrary} 
-              />
+              <TouchableOpacity onPress={navigateToExerciseLibrary} style={styles.button}>
+                <Text style={styles.buttonText}>Pick From Exercise Library</Text>
+              </TouchableOpacity>
 
-              <View style={styles.submitContainer}>
-                <Button
-                  title="Submit Workout"
-                  onPress={handleSubmitWorkout}
-                  color="#007AFF"
-                  disabled={isSubmitted || !workoutName.trim()}
-                />
-                {isSubmitted && <Text style={styles.submissionStatus}>Workout submitted successfully!</Text>}
-              </View>
+              <TouchableOpacity onPress={() => setCurrentStep(2)} style={styles.button}>
+                <Text style={styles.buttonText}>Back</Text>
+              </TouchableOpacity>
             </>
           )}
         </>
       )}
-  
-      {currentStep > 1 && <Button title="Previous" onPress={handlePreviousStep} />}
+
     </ScrollView>
   );
 };
@@ -503,7 +497,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 60,
     borderRadius: 25,
     alignItems: 'center',
-    marginTop: 20,
+    marginTop: 10,
   },
   stepContainer: {
     alignItems: 'center',

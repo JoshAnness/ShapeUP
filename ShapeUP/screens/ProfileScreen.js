@@ -19,29 +19,30 @@ const ProfileScreen = ({ navigation }) => {
     });
     const today = format(new Date(), 'yyyy-MM-dd');
 
-    useEffect(() => {
-        const fetchUserData = async () => {
-            if (auth.currentUser) {
-                const userRef = doc(db, 'users', auth.currentUser.uid);
-                const docSnapshot = await getDoc(userRef);
-    
-                if (docSnapshot.exists()) {
-                    const userData = docSnapshot.data();
-                    setUser({
-                        ...user,
-                        firstName: userData.firstName || '',
-                        lastName: userData.lastName || '',
-                        userProfilePic: userData.userImg || null,
-                    });
-                } else {
-                    console.warn("User document doesn't exist");
-                }
-            }
-        };
-    
-        fetchUserData();
+    useFocusEffect(
+        useCallback(() => {
+            const fetchUserData = async () => {
+                if (auth.currentUser) {
+                    const userRef = doc(db, 'users', auth.currentUser.uid);
+                    const docSnapshot = await getDoc(userRef);
         
-    }, [auth.currentUser]); 
+                    if (docSnapshot.exists()) {
+                        const userData = docSnapshot.data();
+                        setUser({
+                            ...user,
+                            firstName: userData.firstName || '',
+                            lastName: userData.lastName || '',
+                            userProfilePic: userData.userImg || null,
+                        });
+                    } else {
+                        console.warn("User document doesn't exist");
+                    }
+                }
+            };
+        
+            fetchUserData();
+        }, [])
+    ); 
 
     useFocusEffect(
         useCallback(() => {
@@ -119,7 +120,6 @@ const ProfileScreen = ({ navigation }) => {
             
             {todaysWorkouts.length > 0 ? (
                 <View style={{ alignItems: 'center', width: '100%' }}>
-                    {/* Simplified to navigate directly to DateDetails with today's date */}
                     <TouchableOpacity
                         style={styles.workoutItem}
                         onPress={() => navigation.navigate('Details', { selectedDate: today })}
@@ -152,7 +152,7 @@ const ProfileScreen = ({ navigation }) => {
             )}
 
             <View style={styles.footerContainer}>
-                <FooterButton name="home" icon={require('../assets/homeIcon.png')} onPress={() => navigation.navigate('Profile')} />
+                <FooterButton name="home" icon={require('../assets/homeIcon.png')} onPress={() => navigation.navigate('Home')} />
                 <FooterButton name="add" icon={require('../assets/addIcon.png')} onPress={() => navigation.navigate('WorkoutCreation')} />
                 <FooterButton name="calendar" icon={require('../assets/calendarIcon.png')} onPress={() => navigation.navigate('Calendar')} />
             </View>

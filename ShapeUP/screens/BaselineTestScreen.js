@@ -60,7 +60,7 @@ const BaselineTestScreen = ({ navigation }) => {
       try {
         const baselineTestRef = doc(db, 'baselineTests', uid);
         await setDoc(baselineTestRef, baselineTestData, { merge: true });
-        navigation.replace('Profile');
+        navigation.replace('Home');
       } catch (error) {
         Alert.alert("Error", "There was an issue saving your data. Please try again.");
         console.error("Error adding baseline test: ", error);

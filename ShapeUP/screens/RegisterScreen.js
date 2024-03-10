@@ -36,7 +36,6 @@ const RegisterScreen = () => {
                     userImg: null
                 });
 
-                // Optionally, navigate the user to the Profile screen after registering
                 navigation.replace('BaselineTest');
             })
             .catch(error => alert(error.message));

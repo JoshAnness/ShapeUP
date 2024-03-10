@@ -18,7 +18,7 @@ const LoginScreen = () => {
    useEffect(() => {
        const unsubscribe = onAuthStateChanged(auth, user => {
            if (user) {
-               navigation.replace('Profile');
+               navigation.replace('Home');
            }
        });
        return unsubscribe;
