@@ -6,6 +6,8 @@ import SegmentedControl from '@react-native-segmented-control/segmented-control'
 import { Calendar } from 'react-native-calendars';
 import { format } from 'date-fns';
 import { useFocusEffect } from '@react-navigation/native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import FooterComponent from '../components/FooterComponent';
 
 const ProfileScreen = ({ navigation }) => {
     const [selectedSegment, setSelectedSegment] = useState(0);
@@ -94,18 +96,7 @@ const ProfileScreen = ({ navigation }) => {
         <TouchableOpacity style={styles.item} onPress={() => navigation.navigate('WorkoutDetails', { workoutId: item.id })}>
             <Text style={styles.itemTitle}>{item.name}</Text>
         </TouchableOpacity>
-    );
-
-    const FooterButton = ({ name, icon, onPress }) => (
-        <TouchableOpacity onPress={() => {
-            onPress();
-            setActiveFooterButton(name);
-          }} 
-          style={[styles.footerButton, activeFooterButton === name ? styles.activeFooterButton : {}]}
-        >
-          <Image source={icon} style={styles.footerIcon} />
-        </TouchableOpacity>
-    );
+    ); 
 
     return (
         <View style={styles.container}>
@@ -116,48 +107,48 @@ const ProfileScreen = ({ navigation }) => {
                 />
             </TouchableOpacity>
             <Text style={styles.welcomeText}>Welcome, {user.firstName} {user.lastName}</Text>
-            <Text style={styles.date}>{format(new Date(), 'PPP')}</Text>
-            
-            {todaysWorkouts.length > 0 ? (
-                <View style={{ alignItems: 'center', width: '100%' }}>
-                    <TouchableOpacity
-                        style={styles.workoutItem}
-                        onPress={() => navigation.navigate('Details', { selectedDate: today })}
-                    >
-                        <Text style={styles.workoutTitle}>Today's Workout</Text>
-                    </TouchableOpacity>
-                </View>
-            ) : (
-                <Text style={styles.noWorkoutText}>No workouts scheduled for today.</Text>
-            )}
-
+    
             <SegmentedControl
                 values={['Workouts', 'Calendar']}
                 selectedIndex={selectedSegment}
                 onChange={(event) => setSelectedSegment(event.nativeEvent.selectedSegmentIndex)}
                 style={styles.segmentedControl}
             />
-
+    
             {selectedSegment === 0 && (
-                <FlatList
-                    data={workouts}
-                    renderItem={renderWorkoutItem}
-                    keyExtractor={(item) => item.id}
-                    style={styles.contentContainer}
+                <>
+                    {todaysWorkouts.length > 0 ? (
+                        <View style={{ alignItems: 'center', width: '100%' }}>
+                            <TouchableOpacity
+                                style={styles.workoutItem}
+                                onPress={() => navigation.navigate('Details', { selectedDate: today })}
+                            >
+                                <Text style={styles.workoutTitle}>Today's Workout</Text>
+                            </TouchableOpacity>
+                        </View>
+                    ) : (
+                        <Text style={styles.noWorkoutText}>No workouts scheduled for today</Text>
+                    )}
+    
+                    <FlatList
+                        data={workouts}
+                        renderItem={renderWorkoutItem}
+                        keyExtractor={(item) => item.id}
+                        style={styles.contentContainer}
+                    />
+                </>
+            )}
+    
+            {selectedSegment === 1 && (
+                <Calendar
+                    onDayPress={handleDayPress}
+                    style={[styles.calendarStyle, { width: 300 }]}
                 />
             )}
-
-            {selectedSegment === 1 && (
-                <Calendar onDayPress={handleDayPress} />
-            )}
-
-            <View style={styles.footerContainer}>
-                <FooterButton name="home" icon={require('../assets/homeIcon.png')} onPress={() => navigation.navigate('Home')} />
-                <FooterButton name="add" icon={require('../assets/addIcon.png')} onPress={() => navigation.navigate('WorkoutCreation')} />
-                <FooterButton name="calendar" icon={require('../assets/calendarIcon.png')} onPress={() => navigation.navigate('Calendar')} />
-            </View>
+    
+            <FooterComponent navigation={navigation} />
         </View>
-    );
+    );    
 }
 
 const styles = StyleSheet.create({
@@ -191,26 +182,30 @@ const styles = StyleSheet.create({
         marginBottom: 20, 
     },
     workoutItem: {
-        padding: 10,
-        marginVertical: 5,
-        backgroundColor: '#E8E8E8',
-        borderRadius: 5,
+        paddingVertical: 15, 
+        paddingHorizontal: 20, 
+        marginVertical: 10,
+        backgroundColor: '#8337FE',
+        borderRadius: 15,
         width: '90%',
         alignItems: 'center',
     },
     workoutTitle: {
         fontSize: 16,
-        color: '#000',
+        color: '#FFFFFF',
     },
     noWorkoutText: {
         fontSize: 16,
         color: '#666',
-        marginTop: 10,
+        marginTop: 0,
+        marginBottom: 5,
     },
     segmentedControl: {
-        width: '90%',
+        width: '85%',
         alignSelf: 'center',
         marginVertical: 20,
+        height: 40,
+        transform: [{ scaleX: 1.1 }, { scaleY: 1.1 }],
     },
     contentContainer: {
         width: '100%',
@@ -218,11 +213,11 @@ const styles = StyleSheet.create({
     item: {
         width: '90%', 
         alignSelf: 'center', 
-        paddingVertical: 20, 
+        paddingVertical: 15, 
         paddingHorizontal: 20, 
         marginVertical: 10, 
-        backgroundColor: '#F8F8F8', 
-        borderRadius: 10, 
+        backgroundColor: '#A97AF6', 
+        borderRadius: 15, 
         borderWidth: 1,
         borderColor: '#E8E8E8', 
         alignItems: 'center',
@@ -230,27 +225,11 @@ const styles = StyleSheet.create({
     itemTitle: {
         fontSize: 16,
         fontWeight: '500',
-        color: '#000', 
+        color: '#FFFFFF', 
     },  
-    footerContainer: {
-        flexDirection: 'row',
-        justifyContent: 'space-around',
-        alignItems: 'center',
+    calendarStyle: {
         width: '100%',
-        borderTopWidth: 1,
-        borderTopColor: '#e1e1e1',
-        paddingVertical: 10,
-    },
-    footerButton: {
-        alignItems: 'center',
-        justifyContent: 'center',
-        flex: 1,
-        paddingVertical: 15,
-    },
-    footerIcon: {
-        width: 30,
-        height: 30,
-        resizeMode: 'contain',
+        alignSelf: 'center',
     },
 });
 

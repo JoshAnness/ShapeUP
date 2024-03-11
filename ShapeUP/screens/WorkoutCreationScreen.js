@@ -472,7 +472,7 @@ const styles = StyleSheet.create({
     color: '#AAA',
   },
   nextButton: {
-    backgroundColor: '#8337FE',
+    backgroundColor: '#ECE5F7',
     paddingVertical: 20,
     paddingHorizontal: 60,
     borderRadius: 25,
@@ -480,8 +480,9 @@ const styles = StyleSheet.create({
     marginTop: 20,
   },
   buttonText: {
-    color: '#FFFFFF',
-    fontSize: 16,
+    color: '#8337FE',
+    fontWeight: '600',
+    fontSize: 18,
   },
   input: {
     borderWidth: 1,
@@ -492,7 +493,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
   },
   button: {
-    backgroundColor: '#8337FE',
+    backgroundColor: '#ECE5F7',
     paddingVertical: 20,
     paddingHorizontal: 60,
     borderRadius: 25,

@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { View, Text, ScrollView, StyleSheet, TouchableOpacity, TextInput, Image, Dimensions } from 'react-native';
+import { View, Text, ScrollView, StyleSheet, TextInput, Image, Dimensions, KeyboardAvoidingView, Platform } from 'react-native';
 import { db } from '../firebase';
-import { collection, query, where, getDocs, doc, getDoc, updateDoc } from 'firebase/firestore';
+import { collection, query, where, getDocs, doc, getDoc, updateDoc, setDoc } from 'firebase/firestore';
 import { getStorage, ref, getDownloadURL } from 'firebase/storage';
 import { format, parseISO } from 'date-fns';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
@@ -12,7 +12,6 @@ function DateDetails({ route }) {
   const { selectedDate } = route.params;
   const [workoutDetails, setWorkoutDetails] = useState([]);
   const [exerciseInputs, setExerciseInputs] = useState({});
-  const [visibleImages, setVisibleImages] = useState({});
   const navigation = useNavigation();
 
   useEffect(() => {
@@ -21,7 +20,7 @@ function DateDetails({ route }) {
 
   useFocusEffect(
     useCallback(() => {
-      return () => saveExerciseInputs(); // This function is called when the screen is unfocused
+      return () => saveExerciseInputs();
     }, [exerciseInputs])
   );
 
@@ -60,6 +59,8 @@ function DateDetails({ route }) {
       const docSnap = await getDoc(docRef);
       if (docSnap.exists()) {
         setExerciseInputs(prev => ({ ...prev, [workout.id]: docSnap.data() }));
+      } else {
+        setExerciseInputs(prev => ({ ...prev, [workout.id]: {} }));
       }
     }
   }
@@ -67,7 +68,7 @@ function DateDetails({ route }) {
   async function saveExerciseInputs() {
     for (const [workoutId, inputs] of Object.entries(exerciseInputs)) {
       const docRef = doc(db, "exerciseInputs", `${workoutId}_${format(parseISO(selectedDate), 'yyyy-MM-dd')}`);
-      await updateDoc(docRef, inputs);
+      await setDoc(docRef, inputs, { merge: true });
     }
   }
 
@@ -85,26 +86,35 @@ function DateDetails({ route }) {
   }
 
   return (
-    <ScrollView style={styles.container}>
-      {workoutDetails.map(workout => (
-        <View key={workout.id}>
-          <Text style={styles.workoutTitle}>{workout.name}</Text>
-          {workout.exercisesWithImages.map((exercise, index) => (
-            <View key={index} style={styles.exerciseContainer}>
-              <TouchableOpacity onPress={() => setVisibleImages({ ...visibleImages, [`${workout.id}_${exercise.name}`]: !visibleImages[`${workout.id}_${exercise.name}`] })}>
+    <KeyboardAvoidingView
+      style={{ flex: 1 }}
+      behavior={Platform.OS === "ios" ? "padding" : "height"}
+      keyboardVerticalOffset={Platform.OS === "ios" ? 64 : 0}
+    >
+      <ScrollView
+        style={styles.container}
+        contentContainerStyle={{ paddingBottom: 100 }}
+      >
+        {workoutDetails.map(workout => (
+          <View key={workout.id}>
+            <Text style={styles.workoutTitle}>{workout.name}</Text>
+            {workout.exercisesWithImages.map((exercise, index) => (
+              <View key={index} style={styles.exerciseContainer}>
                 <Text style={styles.exerciseName}>{exercise.name}</Text>
-                {visibleImages[`${workout.id}_${exercise.name}`] && exercise.images.map((url, idx) => (
-                  <Image key={idx} source={{ uri: url }} style={styles.image} />
-                ))}
-              </TouchableOpacity>
-              <TextInput style={styles.input} placeholder="Sets" value={exerciseInputs[workout.id]?.[exercise.name]?.sets || ''} onChangeText={text => handleExerciseInput(workout.id, exercise.name, 'sets', text)} />
-              <TextInput style={styles.input} placeholder="Reps" value={exerciseInputs[workout.id]?.[exercise.name]?.reps || ''} onChangeText={text => handleExerciseInput(workout.id, exercise.name, 'reps', text)} />
-              <TextInput style={styles.input} placeholder="Max Weight" value={exerciseInputs[workout.id]?.[exercise.name]?.weight || ''} onChangeText={text => handleExerciseInput(workout.id, exercise.name, 'weight', text)} />
-            </View>
-          ))}
-        </View>
-      ))}
-    </ScrollView>
+                <View style={styles.imagesContainer}>
+                  {exercise.images.map((url, idx) => (
+                    <Image key={idx} source={{ uri: url }} style={styles.image} />
+                  ))}
+                </View>
+                <TextInput style={styles.input} placeholder="Sets" value={exerciseInputs[workout.id]?.[exercise.name]?.sets || ''} onChangeText={text => handleExerciseInput(workout.id, exercise.name, 'sets', text)} />
+                <TextInput style={styles.input} placeholder="Reps" value={exerciseInputs[workout.id]?.[exercise.name]?.reps || ''} onChangeText={text => handleExerciseInput(workout.id, exercise.name, 'reps', text)} />
+                <TextInput style={styles.input} placeholder="Max Weight" value={exerciseInputs[workout.id]?.[exercise.name]?.weight || ''} onChangeText={text => handleExerciseInput(workout.id, exercise.name, 'weight', text)} />
+              </View>
+            ))}
+          </View>
+        ))}
+      </ScrollView>
+    </KeyboardAvoidingView>
   );
 }
 
@@ -129,7 +139,7 @@ const styles = StyleSheet.create({
     width: (screenWidth - 40) / 2,
     height: 200,
     resizeMode: 'contain',
-    marginRight: 10,
+    marginRight: 5,
   },
   input: {
     borderWidth: 1,
