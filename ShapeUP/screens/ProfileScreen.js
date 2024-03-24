@@ -50,10 +50,14 @@ const ProfileScreen = ({ navigation }) => {
         useCallback(() => {
             const dayOfWeek = format(new Date(), 'EEEE');
             const fetchTodaysWorkouts = async () => {
-                const q = query(collection(db, 'workouts'), where('assignedDays', 'array-contains', dayOfWeek));
-                const querySnapshot = await getDocs(q);
-                const workouts = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                setTodaysWorkouts(workouts);
+                if (auth.currentUser) {
+                    const q = query(collection(db, 'workouts'), 
+                                    where('assignedDays', 'array-contains', dayOfWeek), 
+                                    where('userId', '==', auth.currentUser.uid));
+                    const querySnapshot = await getDocs(q);
+                    const workouts = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                    setTodaysWorkouts(workouts);
+                }
             };
 
             fetchTodaysWorkouts();
@@ -80,7 +84,9 @@ const ProfileScreen = ({ navigation }) => {
 
     async function fetchTodaysWorkouts() {
         const dayOfWeek = format(new Date(), 'EEEE');
-        const q = query(collection(db, 'workouts'), where('assignedDays', 'array-contains', dayOfWeek));
+        const q = query(collection(db, 'workouts'), 
+                                where('assignedDays', 'array-contains', dayOfWeek), 
+                                where('userId', '==', auth.currentUser.uid));
         const querySnapshot = await getDocs(q);
         const workouts = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
         setTodaysWorkouts(workouts);

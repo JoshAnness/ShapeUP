@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { View, Text, ScrollView, StyleSheet, TextInput, Image, Dimensions, KeyboardAvoidingView, Platform } from 'react-native';
-import { db } from '../firebase';
+import { db, auth } from '../firebase';
 import { collection, query, where, getDocs, doc, getDoc, updateDoc, setDoc } from 'firebase/firestore';
 import { getStorage, ref, getDownloadURL } from 'firebase/storage';
 import { format, parseISO } from 'date-fns';
@@ -25,8 +25,13 @@ function DateDetails({ route }) {
   );
 
   async function fetchWorkoutDetails() {
+    if (!auth.currentUser) {
+      console.log("No user logged in");
+      return;
+    }
+    const userId = auth.currentUser.uid;
     const dayOfWeek = format(parseISO(selectedDate), 'EEEE');
-    const q = query(collection(db, 'workouts'), where('assignedDays', 'array-contains', dayOfWeek));
+    const q = query(collection(db, 'workouts'), where('assignedDays', 'array-contains', dayOfWeek), where('userId', '==', userId));
     const querySnapshot = await getDocs(q);
     const workouts = [];
     for (const doc of querySnapshot.docs) {
