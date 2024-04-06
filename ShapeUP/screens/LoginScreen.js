@@ -4,6 +4,7 @@ import { useNavigation } from '@react-navigation/core';
 import { auth, db } from '../firebase';
 import { createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged } from 'firebase/auth';
 import { setDoc, doc, getDoc } from 'firebase/firestore';
+import { Alert } from 'react-native';
 
 const LoginScreen = () => {
    const [isLogin, setIsLogin] = useState(true);
@@ -34,6 +35,18 @@ const LoginScreen = () => {
    };
 
    const handleSignUp = () => {
+    const disallowedChars = ['{', '}', '[', ']', '/', '\\', '=', '<', '>', '@'];
+    const disallowedEmailChars = ['{', '}', '[', ']', '/', '\\', '=', '<', '>'];
+
+    if (disallowedEmailChars.some(char => email.includes(char))) {
+      Alert.alert("Invalid Input", "Email cannot contain special characters: {} [] / \\ = <>");
+      return;
+    }
+
+    if (disallowedChars.some(char => password.includes(char))) {
+      Alert.alert("Invalid Input", "Password cannot contain special characters: {} [] / \\ = <> @");
+      return;
+    }
     createUserWithEmailAndPassword(auth, email, password)
         .then(userCredentials => {
             const user = userCredentials.user;
