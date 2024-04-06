@@ -21,7 +21,8 @@ const fetchBaselineTestData = async (userId) => {
 };
 
 const callOpenAI = async (workoutGoal, customGoal, selectedMuscles, userBaselineTest) => {
-  const apiKey = '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';
+  const apiKey = process.env.GPT_Key;
+
   const endpoint = 'https://api.openai.com/v1/chat/completions';
   const modelIdentifier = 'gpt-4-1106-preview';
 
