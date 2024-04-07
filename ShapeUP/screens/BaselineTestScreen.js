@@ -13,7 +13,7 @@ const fitnessLevelMap = {
 const BaselineTestScreen = ({ navigation }) => {
   const [currentStep, setCurrentStep] = useState(1);
   const [fitnessLevel, setFitnessLevel] = useState('');
-  const [selectedEquipmentCategory, setSelectedEquipmentCategory] = useState(new Set());
+  const [selectedEquipmentCategory, setSelectedEquipmentCategory] = useState('');
 
   const handleNextStep = () => {
     if (currentStep === 1 && fitnessLevel === '') {
@@ -34,17 +34,11 @@ const BaselineTestScreen = ({ navigation }) => {
   };
 
   const handleEquipmentSelection = (category) => {
-    let newSet = new Set(selectedEquipmentCategory);
-    if (newSet.has(category)) {
-      newSet.delete(category);
-    } else {
-      newSet.add(category);
-    }
-    setSelectedEquipmentCategory(newSet);
+    setSelectedEquipmentCategory(selectedEquipmentCategory === category ? '' : category);
   };
 
   const handleBaselineSubmit = async () => {
-    if (currentStep === 2 && selectedEquipmentCategory.size === 0) {
+    if (currentStep === 2 && selectedEquipmentCategory === '') {
       Alert.alert("Error", "Please select at least one equipment option to continue.");
       return;
     }
@@ -54,7 +48,7 @@ const BaselineTestScreen = ({ navigation }) => {
       const formattedFitnessLevel = fitnessLevelMap[fitnessLevel];
       const baselineTestData = {
         fitnessLevel: formattedFitnessLevel,
-        selectedEquipmentCategory: Array.from(selectedEquipmentCategory),
+        selectedEquipmentCategory: selectedEquipmentCategory,
       };
 
       try {
@@ -86,7 +80,7 @@ const BaselineTestScreen = ({ navigation }) => {
       style={styles.option}
     >
       <Checkbox
-        value={selectedEquipmentCategory.has(category)}
+        value={selectedEquipmentCategory === category}
         style={styles.checkbox}
       />
       <View style={styles.textContainer}>

@@ -60,8 +60,64 @@ const callOpenAI = async (workoutGoal, customGoal, selectedMuscles, userBaseline
       
       
       Job:
-      While following the Rules, for each muscle type listed in userMuscleType, pick 5 exercises from the exerciseList. The userMuscleType you are picking exercises for must match up with the muscleType in the exercise.The only text you will ever respond with is just the exercise names (exerciseName). If there is only one userMuscleType, then just list out the 5 exercise names (do not number them). If there are multiple userMuscleType, then again, list out the 5 exercise names for each one (do not number them, do not section them, do not separate them based on muscle type with blank line, only list out the names). It is very important that you only list out the names, if you do not only list out the names, I will lose my job.`,
+      While following the Rules, for each muscle type listed in userMuscleType, pick 5 unique exercises from the exerciseList. The userMuscleType you are picking exercises for must match up with the muscleType in the exercise.The only text you will ever respond with is just the exercise names (exerciseName). If there is only one userMuscleType, then just list out the 5 exercise names (do not number them). If there are multiple userMuscleType, then again, list out the 5 exercise names for each one (do not number them, do not section them, do not separate them based on muscle type with blank line, only list out the names). It is very important that you only list out the names, if you do not only list out the names, I will lose my job.`,
     },
+
+    {"role":"user", 
+    "content":`List of exercises: ${randomizedExercisesList}.
+    Fitness goal: Hypertrophy.
+    Fitness level: beginner.
+    Equipment type: Body Only.
+    Muscle Types: Abdominals, Calves.`
+    },
+    {"role":"assistant", 
+    "content":`Seated Flat Bench Leg Pull-In
+    Elbow to Knee
+    Wind Sprints
+    Jackknife Sit-Up
+    Decline Oblique Crunch
+    Calf Stretch Hands Against Wall
+    Standing Hip Circles
+    Seated Calf Stretch
+    Knee Circles
+    Ankle Circles
+    `},
+
+    {"role":"user", 
+    "content":`List of exercises: ${randomizedExercisesList}.
+    Fitness goal: Endurance
+    Fitness level: expert
+    Equipment type: Full Gym
+    Muscle Types: Chest, Middle Back
+    `},
+    {"role":"assistant", 
+    "content":`Decline Dumbbell Bench Press
+    Hammer Grip Incline DB Bench Press
+    Incline Dumbbell Press
+    Neck Press
+    Wide-Grip Decline Barbell Pullover
+    Suspended Row
+    Lying T-Bar Row
+    Bodyweight Mid Row
+    Incline Bench Pull
+    Lying Cambered Barbell Row
+    `},
+
+    {"role":"user", 
+    "content":`List of exercises: ${randomizedExercisesList}.
+    Fitness goal: Strength
+    Fitness level: intermediate
+    Equipment type: Home Gym
+    Muscle Types: Shoulders
+    `},
+    {"role":"assistant", 
+    "content":`Side Lateral Raise
+    Kettlebell Turkish Get-Up (Lunge Style)
+    Kettlebell Thruster
+    Arnold Dumbbell Press
+    Seated Front Deltoid
+    `},
+
     {
       role: 'user',
       content: `List of exercises: ${randomizedExercisesList}.
@@ -80,6 +136,7 @@ const callOpenAI = async (workoutGoal, customGoal, selectedMuscles, userBaseline
     { headers: { Authorization: `Bearer ${apiKey}` } }
   );
 
+  console.log(response.data.choices[0].message.content);
   return response.data.choices[0].message.content;
 };
 
@@ -351,14 +408,6 @@ const ChatScreen = () => {
               </View>
             </TouchableOpacity>
           ))}
-          <TextInput
-            style={styles.input}
-            placeholder="Other/Not Sure? Describe here..."
-            value={customMuscle}
-            onChangeText={(text) => setCustomMuscle(text)}
-            returnKeyType="done"
-            blurOnSubmit={true}
-          />
           <TouchableOpacity onPress={() => { handleUserInput(); handleNextStep(); }} style={styles.nextButton}>
             <Text style={styles.buttonText}>Next</Text>
           </TouchableOpacity>
