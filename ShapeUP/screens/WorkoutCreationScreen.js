@@ -215,8 +215,17 @@ const ChatScreen = () => {
           images: [],
           instructions: ''
         }));
-
-        setWorkoutPlan(currentPlan => [...currentPlan, ...exercisesToAdd]);
+    
+        // Remove duplicates by checking if the workoutPlan already contains the exercise
+        const updatedWorkoutPlan = [...workoutPlan];
+        exercisesToAdd.forEach(newExercise => {
+          const isDuplicate = updatedWorkoutPlan.some(existingExercise => existingExercise.name === newExercise.name);
+          if (!isDuplicate) {
+            updatedWorkoutPlan.push(newExercise);
+          }
+        });
+    
+        setWorkoutPlan(updatedWorkoutPlan);
         navigation.setParams({selectedExercisesFromLibrary: undefined});
       }
     });
@@ -274,14 +283,25 @@ const ChatScreen = () => {
       const exerciseResponse = await callOpenAI(workoutGoal, customGoal, selectedMuscles, userBaselineTest);
       let extractedExercises = exerciseResponse.split('\n').map(ex => ex.trim());
       extractedExercises = extractedExercises.filter(exercise => exercise !== '');
-      const newWorkoutPlan = extractedExercises.map(exercise => ({
-        name: exercise,
-        selected: false,
-        expanded: false,
-        images: [],
-        instructions: ''
-      }));
-      setWorkoutPlan(newWorkoutPlan);
+
+      const uniqueExercises = [];
+      const exerciseMap = new Map();
+
+      extractedExercises.forEach(exercise => {
+        if (!exerciseMap.has(exercise)) {
+          exerciseMap.set(exercise, true);
+          uniqueExercises.push({
+            name: exercise,
+            selected: false,
+            expanded: false,
+            images: [],
+            instructions: ''
+          });
+        }
+      });
+
+      setWorkoutPlan(uniqueExercises);
+
     } catch (error) {
       console.error("Failed to fetch exercises:", error);
     } finally {
