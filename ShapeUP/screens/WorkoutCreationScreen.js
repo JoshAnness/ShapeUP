@@ -64,7 +64,7 @@ const callOpenAI = async (workoutGoal, customGoal, selectedMuscles, userBaseline
     },
 
     {"role":"user", 
-    "content":`List of exercises: ${randomizedExercisesList}.
+    "content":`List of exercises: {ExercisesList}.
     Fitness goal: Hypertrophy.
     Fitness level: beginner.
     Equipment type: Body Only.
@@ -84,7 +84,7 @@ const callOpenAI = async (workoutGoal, customGoal, selectedMuscles, userBaseline
     `},
 
     {"role":"user", 
-    "content":`List of exercises: ${randomizedExercisesList}.
+    "content":`List of exercises: {ExercisesList}.
     Fitness goal: Endurance
     Fitness level: expert
     Equipment type: Full Gym
@@ -104,7 +104,7 @@ const callOpenAI = async (workoutGoal, customGoal, selectedMuscles, userBaseline
     `},
 
     {"role":"user", 
-    "content":`List of exercises: ${randomizedExercisesList}.
+    "content":`List of exercises: {ExercisesList}.
     Fitness goal: Strength
     Fitness level: intermediate
     Equipment type: Home Gym
