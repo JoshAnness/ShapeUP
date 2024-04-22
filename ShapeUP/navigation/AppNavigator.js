@@ -8,14 +8,12 @@ import RegisterScreen from '../screens/RegisterScreen';
 import { signOut } from 'firebase/auth';
 import { auth } from '../firebase';
 import SettingsScreen from '../screens/SettingsScreen';
-import FeedScreen from '../screens/FeedScreen';
-import WorkoutLibrary from '../screens/WorkoutLibrary';
-import WorkoutTracker from '../screens/WorkoutTracker';
 import Calendar from '../screens/CalendarInfo';
 import CalendarInfo from '../screens/CalendarInfo';
 import DateDetails from '../screens/DateDetails';
-import ChatGPT from '../screens/ChatGPT';
+import ChatScreen from '../screens/WorkoutCreationScreen';
 import WorkoutDetails from '../screens/WorkoutDetails';
+import ExerciseLibraryScreen from '../screens/ExerciseLibraryScreen';
 
 const Stack = createStackNavigator();
 
@@ -59,7 +57,7 @@ const AppNavigator = () => (
     />
 
     <Stack.Screen 
-      name="Profile" 
+      name="Home" 
       component={ProfileScreen} 
       options={({ navigation }) => ({
         headerShown: false
@@ -73,28 +71,11 @@ const AppNavigator = () => (
     />
 
     <Stack.Screen 
-      name="Feed" 
-      component={FeedScreen} 
-      options={{ title: 'Feed' }}
-    />
-
-    <Stack.Screen 
-      name="Library" 
-      component={WorkoutLibrary} 
-      options={{ title: 'Library for Workouts' }}
-    /> 
-
-    <Stack.Screen 
-      name="Tracker" 
-      component={WorkoutTracker} 
-      options={{ title: 'Workout Tracker' }}
-    />
-
-    <Stack.Screen 
       name="CalendarIn" 
       component={CalendarInfo} 
       options={{ title: 'Calendar' }}
     />
+
     <Stack.Screen 
       name="Details" 
       component={DateDetails} 
@@ -102,8 +83,8 @@ const AppNavigator = () => (
     />
 
     <Stack.Screen 
-      name="Chat" 
-      component={ChatGPT} 
+      name="WorkoutCreation" 
+      component={ChatScreen} 
       options={{ title: 'AI Workout Creation' }}
     />
 
@@ -111,6 +92,12 @@ const AppNavigator = () => (
       name="WorkoutDetails" 
       component={WorkoutDetails} 
       options={{ title: 'Workout Details' }}
+    />
+
+    <Stack.Screen 
+      name="ExerciseLibrary" 
+      component={ExerciseLibraryScreen} 
+      options={{ title: 'Exercise Library' }}
     />
 
   </Stack.Navigator>
